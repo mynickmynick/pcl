@@ -299,7 +299,12 @@ namespace pcl
   default(none) \
   shared(cloud, cloud_texture_ptr, cloud_vertices_ptr, mapColorFunc)
 #endif
+
+#ifdef _WINDOWS
+    for (std::ptrdiff_t index = 0; index < static_cast<std::ptrdiff_t>(cloud->size()); ++index)
+#else
     for (std::size_t index = 0; index < cloud->size (); ++index)
+#endif
     {
       const auto ptr = cloud_vertices_ptr + index;
       const auto uvptr = cloud_texture_ptr + index;
