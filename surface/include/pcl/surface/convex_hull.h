@@ -88,7 +88,7 @@ namespace pcl
       using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
       /** \brief Empty constructor. */
-      ConvexHull () : compute_area_ (false), total_area_ (0), total_volume_ (0), dimension_ (0),
+      ConvexHull () : compute_area_ (false), disable_stdout_(true), total_area_ (0), total_volume_ (0), dimension_ (0),
                       projection_angle_thresh_ (std::cos (0.174532925) ), qhull_flags ("qhull "),
                       x_axis_ (1.0, 0.0, 0.0), y_axis_ (0.0, 1.0, 0.0), z_axis_ (0.0, 0.0, 1.0)
       {
@@ -166,6 +166,21 @@ namespace pcl
         return (dimension_);
       }
 
+      /** \brief Sets the disable_stdout_ bit. If true the verbouse stdout will be disabled
+      * \param[in] disableStdOut value to write on the disable_stdout_ bit
+      */
+      void setDisableStdOut (bool disableStdOut=true)
+      {
+        disable_stdout_ = disableStdOut;
+      }
+
+      /** \brief Returns the disable_stdout_ bit. If true the verbouse stdout will be disabled
+      */
+      bool getDisableStdOut ()
+      {
+        return disable_stdout_;
+      }
+
       /** \brief Retrieve the indices of the input point cloud that for the convex hull.
         *
         * \note Should only be called after reconstruction was performed.
@@ -238,6 +253,9 @@ namespace pcl
 
       /* \brief True if we should compute the area and volume of the convex hull. */
       bool compute_area_;
+
+      /* \brief True if we disable stdout. */
+      bool disable_stdout_;
 
       /* \brief The area of the convex hull. */
       double total_area_;
