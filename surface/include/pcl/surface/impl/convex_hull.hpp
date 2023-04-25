@@ -186,7 +186,7 @@ pcl::ConvexHull<PointInT>::performReconstruction2D (PointCloud &hull, std::vecto
    
   // Compute convex hull
   int exitcode = qh_new_qhull (qh, dimension, static_cast<int> (indices_->size ()), points, ismalloc, const_cast<char*> (flags), outfile, errfile);
-  if (compute_area_)
+  if (compute_area_)//this part is redundant and slows down of 5% (already called inside qh_new_qhull directly or indirectly)
   {
     qh_prepare_output(qh);
   }
