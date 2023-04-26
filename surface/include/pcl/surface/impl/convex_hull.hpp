@@ -186,10 +186,10 @@ pcl::ConvexHull<PointInT>::performReconstruction2D (PointCloud &hull, std::vecto
    
   // Compute convex hull
   int exitcode = qh_new_qhull (qh, dimension, static_cast<int> (indices_->size ()), points, ismalloc, const_cast<char*> (flags), outfile, errfile);
-  if (compute_area_)
-  {
-    qh_prepare_output(qh);
-  }
+ // if (compute_area_)//this part is redundant and slows down of 5% (qh_prepare_output already called inside qh_new_qhull directly or indirectly)
+ // {
+ //   qh_prepare_output(qh);
+ // }
     
   // 0 if no error from qhull or it doesn't find any vertices
   if (exitcode != 0 || qh->num_vertices == 0)
@@ -325,10 +325,10 @@ pcl::ConvexHull<PointInT>::performReconstruction3D (
 
   // Compute convex hull
   int exitcode = qh_new_qhull (qh, dimension, static_cast<int> (indices_->size ()), points, ismalloc, const_cast<char*> (flags), outfile, errfile);
-  if (compute_area_)
-  {
-    qh_prepare_output(qh);
-  }
+  //if (compute_area_)//this part is redundant and slows down of 5% (qh_prepare_output already called inside qh_new_qhull directly or indirectly)
+  //{
+  //  qh_prepare_output(qh);
+  //}
 
   // 0 if no error from qhull
   if (exitcode != 0)
