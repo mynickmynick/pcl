@@ -71,7 +71,7 @@ namespace pcl
       using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
       /** \brief Empty constructor. */
-      ConcaveHull () : alpha_ (0), keep_information_ (false), voronoi_centers_ (), dim_(0)
+      ConcaveHull () : alpha_ (0), keep_information_ (false), voronoi_centers_ (), dim_(0), total_area_(0), total_volume_(0)
       {
       };
       
@@ -151,6 +151,22 @@ namespace pcl
           PCL_ERROR ("[pcl::%s::setDimension] Invalid input dimension specified!\n", getClassName ().c_str ());
       }
 
+      /** \brief Returns the total area of the convex hull. */
+      double
+        getTotalArea () const
+      {
+        return (total_area_);
+      }
+
+      /** \brief Returns the total volume of the convex hull. Only valid for 3-dimensional sets.
+      *  For 2D-sets volume is zero. 
+      */
+      double
+        getTotalVolume () const
+      {
+        return (total_volume_);
+      }
+
       /** \brief Retrieve the indices of the input point cloud that for the convex hull.
         *
         * \note Should only be called after reconstruction was performed and if the ConcaveHull is
@@ -201,6 +217,12 @@ namespace pcl
       
       /** \brief the dimensionality of the concave hull */
       int dim_;
+
+      /* \brief The area of the convex hull. */
+      double total_area_;
+
+      /* \brief The volume of the convex hull (only for 3D hulls, zero for 2D). */
+      double total_volume_;
 
       /** \brief vector containing the point cloud indices of the convex hull points. */
       pcl::PointIndices hull_indices_;

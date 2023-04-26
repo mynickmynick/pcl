@@ -174,7 +174,7 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
   // True if qhull should free points in qh_freeqhull() or reallocation
   boolT ismalloc = True;
   // option flags for qhull, see qh_opt.htm
-  char flags[] = "qhull d QJ";
+  char flags[] = "qhull d QJ FA";
   // output from qh_produce_output(), use NULL to skip qh_produce_output()
   FILE *outfile = nullptr;
   // error messages from qhull code
@@ -383,6 +383,12 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
     alpha_shape.resize (vertices);
     alpha_shape.width = alpha_shape.size ();
     alpha_shape.height = 1;
+
+    if (1)
+    {
+      total_area_  = qh->totarea;
+      total_volume_ = qh->totvol;
+    }
   }
   else
   {
@@ -543,7 +549,15 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
 
     if (voronoi_centers_)
       voronoi_centers_->points.resize (dd);
+
+    if (1)
+    {
+      total_area_ = qh->totvol;
+      total_volume_ = 0.0;
+    }
   }
+
+
 
   qh_freeqhull (qh, !qh_ALL);
   int curlong, totlong;
