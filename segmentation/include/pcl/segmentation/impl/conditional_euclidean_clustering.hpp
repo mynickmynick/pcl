@@ -193,7 +193,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
     cloud_cluster.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
     //cloud_cluster_hull.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
     PointCloudPtr tempHull1 = PointCloudPtr(new pcl::PointCloud<PointT >);
-    PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
+    //PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
     PointCloudPtr tempHull3 = PointCloudPtr(new pcl::PointCloud<PointT >);
     cloud_cluster.back()->push_back((*input_)[iindex]);
     tempHull1->push_back((*input_)[iindex]);
@@ -226,28 +226,30 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
         if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
         {
           float area, volume;
-          if(cloud_cluster.back()->size()>50) //(tempHull1->size() > 4)
+          if(cloud_cluster.back()->size()>30) //(tempHull1->size() > 4)
           {
             pcl::ConvexHull<PointT> chull;
             tempHull3->push_back((*input_)[nn_indices[nii]]);
+            //std::cout <<"LOADING tempHull3 size "<< tempHull3->size() << std::endl;
             chull.setInputCloud(tempHull3);
-            chull.setDimension(3);
+            //chull.setDimension(3);
             chull.setComputeAreaVolume(true);
+            PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
             int res=chull.reconstruct(*tempHull2);
             area = chull.getTotalArea();
             volume = chull.getTotalVolume();
-            if(0)// (res)
+            /*if(0)// (res)
             {
               //std::cout << "Loading full set!!!!\n";
               pcl::ConvexHull<PointT> chull2;
               chull2.setInputCloud(cloud_cluster.back());
-              chull2.setDimension(3);
+              //chull2.setDimension(3);
               chull2.setComputeAreaVolume(true);
               res=chull2.reconstruct(*tempHull2);
               area = chull2.getTotalArea();
               volume = chull2.getTotalVolume();
             }
-
+            */
             if (!res &&
               216 * volume * volume <=
               UnflatnessThreshold * (area * area * area))
