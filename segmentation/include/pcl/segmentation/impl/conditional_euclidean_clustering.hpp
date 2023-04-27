@@ -226,7 +226,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
         if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
         {
           float area, volume;
-          if(cloud_cluster.back()->size()>30) //(tempHull1->size() > 4)
+          if(cloud_cluster.back()->size()>10) //(tempHull1->size() > 4)
           {
             pcl::ConvexHull<PointT> chull;
             tempHull3->push_back((*input_)[nn_indices[nii]]);
