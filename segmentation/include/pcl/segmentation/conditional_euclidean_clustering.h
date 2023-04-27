@@ -40,10 +40,15 @@
 #include <pcl/memory.h>
 #include <pcl/pcl_base.h>
 #include <pcl/pcl_macros.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/console/print.h> // for PCL_WARN
 #include <pcl/search/search.h> // for Search
 
+
 #include <functional>
+//#include <vector>
+
 
 namespace pcl
 {
@@ -91,6 +96,8 @@ namespace pcl
       using PCLBase<PointT>::indices_;
       using PCLBase<PointT>::initCompute;
       using PCLBase<PointT>::deinitCompute;
+      using PointCloudPtr = shared_ptr<pcl::PointCloud<PointT>>; //already defined in PCLBase
+      
 
     public:
       /** \brief Constructor.
@@ -218,6 +225,9 @@ namespace pcl
       void
       segment (IndicesClusters &clusters);
 
+      void
+      segment_(IndicesClusters& clusters); 
+
       /** \brief Get the clusters that are invalidated due to size constraints.
         * \note The constructor of this class needs to be initialized with true, and the segment method needs to have been called prior to using this method.
         * \param[out] small_clusters The resultant clusters that contain less than min_cluster_size points
@@ -233,6 +243,15 @@ namespace pcl
         }
         small_clusters = small_clusters_;
         large_clusters = large_clusters_;
+      }
+
+      void setUnflatnessThreshold(float th)
+      {
+        UnflatnessThreshold = th;
+      }
+      float getUnflatnessThreshold()
+      {
+        return UnflatnessThreshold;
       }
 
     private:
@@ -259,6 +278,11 @@ namespace pcl
 
       /** \brief The resultant clusters that contain more than max_cluster_size points */
       pcl::IndicesClustersPtr large_clusters_;
+
+      
+      std::vector<PointCloudPtr> cloud_cluster;
+      //std::vector<PointCloudPtr> cloud_cluster_hull;
+      float UnflatnessThreshold=0.25;
 
     public:
       PCL_MAKE_ALIGNED_OPERATOR_NEW
