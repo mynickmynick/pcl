@@ -81,6 +81,11 @@ pcl::ConvexHull<PointInT>::performReconstruction2D (PointCloud &hull, std::vecto
   bool xy_proj_safe = true;
   bool yz_proj_safe = true;
   bool xz_proj_safe = true;
+  hull.clear();
+  hull.resize (0);
+  hull.width = 0; hull.height = 1;
+  hull.is_dense = false;
+  //std::cout << "performReconstruction2D\n";
 
   // Check the input's normal to see which projection to use
   PointInT p0 = (*input_)[(*indices_)[0]];
@@ -185,9 +190,11 @@ pcl::ConvexHull<PointInT>::performReconstruction2D (PointCloud &hull, std::vecto
   qhT qh_qh;
   qhT* qh = &qh_qh;
   QHULL_LIB_CHECK
+    //std::cout << "qh_zero\n";
   qh_zero(qh, errfile);
    
   // Compute convex hull
+  //std::cout << "qh_new_qhull\n";
   int exitcode = qh_new_qhull (qh, dimension, static_cast<int> (indices_->size ()), points, ismalloc, const_cast<char*> (flags), outfile, errfile);
  // if (compute_area_)//this part is redundant and slows down of 5% (qh_prepare_output already called inside qh_new_qhull directly or indirectly)
  // {
@@ -197,10 +204,8 @@ pcl::ConvexHull<PointInT>::performReconstruction2D (PointCloud &hull, std::vecto
   // 0 if no error from qhull or it doesn't find any vertices
   if (exitcode != 0 || qh->num_vertices == 0)
   {
+    //std::cout << "exitcode != 0\n";
     //PCL_ERROR ("--[pcl::%s::performReconstrution2D] ERROR: qhull was unable to compute a convex hull for the given point cloud ( %d   %lu  )!\n", getClassName ().c_str (), exitcode, indices_->size ());
-
-    hull.resize (0);
-    hull.width = hull.height = 0;
     polygons.resize (0);
 
     qh_freeqhull (qh, !qh_ALL);
@@ -300,6 +305,11 @@ pcl::ConvexHull<PointInT>::performReconstruction3D (
 {
   int res = 0;
   int dimension = 3;
+  hull.clear();
+  hull.resize (0);
+  hull.width = 0; hull.height = 1;
+  hull.is_dense = false;
+  //std::cout << "performReconstruction3D\n";
 
   // True if qhull should free points in qh_freeqhull() or reallocation
   boolT ismalloc = True;
@@ -330,9 +340,11 @@ pcl::ConvexHull<PointInT>::performReconstruction3D (
   qhT qh_qh;
   qhT* qh = &qh_qh;
   QHULL_LIB_CHECK
+  //std::cout << "qh_zero\n";
   qh_zero(qh, errfile);
 
   // Compute convex hull
+  //std::cout << "qh_new_qhull\n";
   int exitcode = qh_new_qhull (qh, dimension, static_cast<int> (indices_->size ()), points, ismalloc, const_cast<char*> (flags), outfile, errfile);
   //if (compute_area_)//this part is redundant and slows down of 5% (qh_prepare_output already called inside qh_new_qhull directly or indirectly)
   //{
@@ -342,14 +354,14 @@ pcl::ConvexHull<PointInT>::performReconstruction3D (
   // 0 if no error from qhull
   if (exitcode != 0)
   {
+   // std::cout << "exitcode != 0\n";
     /*
     PCL_ERROR("[pcl::%s::performReconstrution3D] ERROR: qhull was unable to compute a "
               "convex hull for the given point cloud (%d   %zu)!\n",
               getClassName().c_str(),exitcode,
               static_cast<std::size_t>(input_->size()));
 */
-    hull.resize (0);
-    hull.width = hull.height = 0;
+
     polygons.resize (0);
 
     qh_freeqhull (qh, !qh_ALL);
@@ -361,7 +373,7 @@ pcl::ConvexHull<PointInT>::performReconstruction3D (
 
     return 1;
   }
-
+  //std::cout << "qh_triangulate\n";
   qh_triangulate (qh);
 
   int num_facets = qh->num_facets;
@@ -458,7 +470,32 @@ pcl::ConvexHull<PointInT>::performReconstruction (PointCloud &hull, std::vector<
 
 //////////////////////////////////////////////////////////////////////////
 template <typename PointInT> int
-pcl::ConvexHull<PointInT>::reconstruct (PointCloud &points)
+pcl::ConvexHull<PointInT>::reconstruct (PointCloudPtr & points)
+{
+  points = PointCloudPtr(new PointCloud);
+
+  points->header = input_->header;
+  if (!initCompute () || input_->points.empty () || indices_->empty ())
+  {
+    points->clear ();
+    return 1;
+  }
+
+  // Perform the actual surface reconstruction
+  std::vector<pcl::Vertices> polygons;
+  res_=performReconstruction (*points, polygons, false);
+
+  points->width = points->size ();
+  points->height = 1;
+  points->is_dense = true;
+
+
+  deinitCompute ();
+  return res_;
+}
+
+template <typename PointInT> int
+pcl::ConvexHull<PointInT>::reconstruct (PointCloud & points)
 {
   points.header = input_->header;
   if (!initCompute () || input_->points.empty () || indices_->empty ())
@@ -475,11 +512,10 @@ pcl::ConvexHull<PointInT>::reconstruct (PointCloud &points)
   points.height = 1;
   points.is_dense = true;
 
+
   deinitCompute ();
   return res_;
 }
-
-
 //////////////////////////////////////////////////////////////////////////
 template <typename PointInT> void
 pcl::ConvexHull<PointInT>::performReconstruction (PolygonMesh &output)

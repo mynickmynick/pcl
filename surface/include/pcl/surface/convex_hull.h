@@ -116,7 +116,9 @@ namespace pcl
         * \param[out] points the resultant points lying on the convex hull.
         */
       int
-      reconstruct (PointCloud &points);
+        reconstruct(PointCloudPtr & points);//(PointCloud &points);
+      int
+        reconstruct(PointCloud &points);
 
       /** \brief If set to true, the qhull library is called to compute the total area and volume of the convex hull.
         * NOTE: When this option is activated, the qhull library produces output to the console.

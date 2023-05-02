@@ -193,7 +193,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
     cloud_cluster.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
     //cloud_cluster_hull.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
     PointCloudPtr tempHull1 = PointCloudPtr(new pcl::PointCloud<PointT >);
-    //PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
+    PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
     PointCloudPtr tempHull3 = PointCloudPtr(new pcl::PointCloud<PointT >);
     cloud_cluster.back()->push_back((*input_)[iindex]);
     tempHull1->push_back((*input_)[iindex]);
@@ -234,8 +234,13 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
             chull.setInputCloud(tempHull3);
             //chull.setDimension(3);
             chull.setComputeAreaVolume(true);
-            PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
-            int res=chull.reconstruct(*tempHull2);
+            //PointCloudPtr tempHull2 = PointCloudPtr(new pcl::PointCloud<PointT >);
+            //std::cout <<"BEFORE--:"<< *tempHull2 << "\n";
+            //std::cout << tempHull2->width <<  " "<<tempHull2->height<<" "<<tempHull2->is_dense<<    "\n";
+
+            int res = chull.reconstruct(tempHull2);//(*tempHull2);
+            //std::cout <<"AFTER--:"<< *tempHull2 << "\n";
+            //std::cout << tempHull2->width <<  " "<<tempHull2->height<<" "<<tempHull2->is_dense<<    "\n";
             area = chull.getTotalArea();
             volume = chull.getTotalVolume();
             /*if(0)// (res)
@@ -274,7 +279,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
                   tempHull1 = tempHull2;
                   tempHull3 = tempHull2;
                   tempHull2Size = tempHull2->size();
-                  //std::cout <<"tempHull2 size "<< tempHull2->size() << std::endl;
+                  //std::cout << "------------tempHull2 size and res " << tempHull2->size() << " " <<res << std::endl;
                 }
                 else
                 {
@@ -308,14 +313,14 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
               }
               */
               tempHull3 = tempHull1;
-              /*std::cout << "Rejecting Point -----\n";
-              std::cout <<"tempHull1 size "<< tempHull1->size() << std::endl;
-              std::cout <<"tempHull3 size "<< tempHull3->size() << std::endl;
-              std::cout <<"cloud_cluster.back.size:: "<< cloud_cluster.back()->size() << std::endl;
-              for (auto p: tempHull1->points)
-                std::cout <<" -- P: "<< p.x<<" : "<< p.y<<" : "<< p.z;
-              std::cout << std::endl;
-              getchar();*/
+              //std::cout << "Rejecting Point -----\n";
+              //std::cout <<"tempHull1 size "<< tempHull1->size() << std::endl;
+              //std::cout <<"tempHull3 size "<< tempHull3->size() << std::endl;
+              //std::cout <<"cloud_cluster.back.size:: "<< cloud_cluster.back()->size() << std::endl;
+              //for (auto p: tempHull1->points)
+              //  std::cout <<" -- P: "<< p.x<<" : "<< p.y<<" : "<< p.z;
+              //std::cout << std::endl;
+              //getchar();
 
             }
           }
@@ -327,6 +332,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
             tempHull3->push_back((*input_)[nn_indices[nii]]);
             tempHull1->push_back((*input_)[nn_indices[nii]]);
             processed[nn_indices[nii]] = true;
+            std::cout <<"tempHull1 size "<< tempHull1->size() << std::endl;
             /*std::cout << "------------Inserted Point at cluster start -----\n";
             std::cout <<"tempHull1 size "<< tempHull1->size() << std::endl;
             std::cout <<"tempHull3 size "<< tempHull3->size() << std::endl;
