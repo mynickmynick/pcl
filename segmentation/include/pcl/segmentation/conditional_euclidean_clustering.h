@@ -226,7 +226,11 @@ namespace pcl
       segment (IndicesClusters &clusters);
 
       void
-      segment_(IndicesClusters& clusters); 
+      segment_ByConvexHull(IndicesClusters& clusters);
+
+      void
+      segment_ByOBB(IndicesClusters& clusters);
+
 
       /** \brief Get the clusters that are invalidated due to size constraints.
         * \note The constructor of this class needs to be initialized with true, and the segment method needs to have been called prior to using this method.

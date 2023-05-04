@@ -40,8 +40,8 @@
 #include <pcl/segmentation/conditional_euclidean_clustering.h>
 #include <pcl/search/organized.h> // for OrganizedNeighbor
 #include <pcl/search/kdtree.h> // for KdTree
-//#include <../../surface/include/pcl/surface/convex_hull.h>
 #include <pcl/surface/convex_hull.h>
+#include <pcl/common/centroid.h>
 
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segment (pcl::IndicesClusters &clusters)
@@ -143,7 +143,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment (pcl::IndicesClusters &clus
 }
 
 template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clusters)
+pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesClusters &clusters)
 {
   // Prepare output (going to use push_back)
   clusters.clear ();
@@ -365,6 +365,206 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ (pcl::IndicesClusters &clu
       else
         clusters.push_back (pi);
     }
+  }
+
+  deinitCompute ();
+}
+
+template<typename PointT> void
+pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters &clusters)
+{
+  // Prepare output (going to use push_back)
+  clusters.clear ();
+
+
+  // Validity checks
+  if (!initCompute () || input_->points.empty () || indices_->empty () || !condition_function_)
+    return;
+
+  // Initialize the search class
+  if (!searcher_)
+  {
+    if (input_->isOrganized ())
+      searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
+    else
+      searcher_.reset (new pcl::search::KdTree<PointT> ());
+  }
+  searcher_->setInputCloud (input_, indices_);
+
+  // Temp variables used by search class
+  Indices nn_indices;
+  std::vector<float> nn_distances;
+
+  // Create a bool vector of processed point indices, and initialize it to false
+  // Need to have it contain all possible points because radius search can not return indices into indices
+  std::vector<int> processed (input_->size (), false);
+
+  int clusterIndex = 1;
+  // Process all points indexed by indices_
+  for (const auto& iindex : (*indices_)) // iindex = input index
+  {
+    // Has this point been processed before?
+    if (iindex == UNAVAILABLE || processed[iindex])
+      continue;
+
+    // Set up a new growing cluster
+    Indices current_cluster;
+    int cii = 0;  // cii = cluster indices iterator
+
+    // Add the point to the cluster
+    std::cout << "NEW CLUSTER - - - - - - - - - - - - - - \n";
+    current_cluster.push_back (iindex);
+
+    cloud_cluster.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
+    //cloud_cluster_hull.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
+
+    Eigen::Matrix<float, 3, 1> centroid;
+    Eigen::Matrix<float, 3, 3>  covariance_matrix ;
+    Eigen::Matrix<float, 3, 1> obb_center;
+    Eigen::Matrix<float, 3, 1> obb_dimensions;
+    Eigen::Matrix<float, 3, 3> obb_rotational_matrix;
+    unsigned int oldSize = 0;
+    Eigen::Matrix<float, 3, 1> major_axis;
+    Eigen::Matrix<float, 3, 1> middle_axis;
+    Eigen::Matrix<float, 3, 1> minor_axis;
+
+
+    cloud_cluster.back()->push_back((*input_)[iindex]);
+
+    processed[iindex] = clusterIndex;
+
+    // Process the current cluster (it can be growing in size as it is being processed)
+    while (cii < static_cast<int> (current_cluster.size ()))
+    {
+      //std::cout << "Trying new center ------\n";
+      // Search for neighbors around the current seed point of the current cluster
+      if (searcher_->radiusSearch ((*input_)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances) < 1)
+      {
+        cii++;
+        //std::cout << "Center skipped \n";
+        continue;
+      }
+
+      // Process the neighbors
+      //std::cout << "Processing neigbours " << static_cast<int> (nn_indices.size()) << std::endl;
+      for (int nii = 1; nii < static_cast<int> (nn_indices.size ()); ++nii)  // nii = neighbor indices iterator
+      {
+
+        // Has this point been processed before?
+        if (nn_indices[nii] == UNAVAILABLE || processed[nn_indices[nii]])
+          continue;
+
+        // Validate if condition holds
+        if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
+        {
+          float area, volume;
+          if(cloud_cluster.back()->size()>40)
+          {
+            if (cloud_cluster.back()->size() % 20 == 1)//this period must be a submultiple of the previous period
+            {
+              Eigen::Matrix<float, 3, 1> temp_centroid=temp_centroid;
+              Eigen::Matrix<float, 3, 3> temp_covariance_matrix=temp_covariance_matrix;
+              Eigen::Matrix<float, 3, 1> temp_obb_center=temp_obb_center;
+              Eigen::Matrix<float, 3, 1> temp_obb_dimensions=temp_obb_dimensions;
+              Eigen::Matrix<float, 3, 3> temp_obb_rotational_matrix=temp_obb_rotational_matrix;
+              unsigned int temp_oldSize = oldSize;
+
+              updateCentroidAndOBB(*(cloud_cluster.back()),
+                temp_centroid,
+                temp_covariance_matrix,
+                temp_obb_center,
+                temp_obb_dimensions,
+                temp_obb_rotational_matrix,
+                temp_oldSize);
+
+              //volume = temp_obb_dimensions[0] * temp_obb_dimensions[1] * temp_obb_dimensions[2];
+              //area = temp_obb_dimensions[0] * temp_obb_dimensions[1];
+
+              if (//flatness condition
+                //volume * volume <=
+                //UnflatnessThreshold * (area * area * area)
+                temp_obb_dimensions[2] * temp_obb_dimensions[2] <=
+                UnflatnessThreshold * (temp_obb_dimensions[0] * temp_obb_dimensions[1])
+                )//unflatness: [0,1] 0:perfectly flat, 1:cube
+              {
+
+                // Add the point to the cluster
+                current_cluster.push_back(nn_indices[nii]);
+                cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+                processed[nn_indices[nii]] = clusterIndex;
+
+                centroid=temp_centroid;
+                covariance_matrix=temp_covariance_matrix;
+                obb_center=temp_obb_center;
+                obb_dimensions=temp_obb_dimensions;
+                obb_rotational_matrix=temp_obb_rotational_matrix;
+                oldSize = oldSize;
+
+                major_axis= obb_rotational_matrix.col(0);
+                middle_axis= obb_rotational_matrix.col(1);
+                minor_axis= obb_rotational_matrix.col(2);
+
+              }
+
+            }
+            else
+            {
+              float xd = (*input_)[nn_indices[nii]].x - centroid[0],
+                yd = (*input_)[nn_indices[nii]].y - centroid[1],
+                zd = (*input_)[nn_indices[nii]].z - centroid[2];
+
+              float x = std::abs(xd * major_axis(0) + yd * major_axis(1) + zd * major_axis(2));
+              float y = std::abs(xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2));
+              float z = std::abs(xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2));
+
+
+
+              if (//flatness condition
+                z*z <=
+                UnflatnessThreshold * (x*y)
+                )//unflatness: [0,1] 0:perfectly flat, 1:cube
+              {
+                // Add the point to the cluster
+                current_cluster.push_back(nn_indices[nii]);
+                cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+                processed[nn_indices[nii]] = clusterIndex;
+              }
+
+            }
+
+
+
+
+          }
+          else
+          {
+            // Add the point to the cluster
+            current_cluster.push_back(nn_indices[nii]);
+            cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+
+            processed[nn_indices[nii]] = clusterIndex;
+
+          }
+        }
+      }
+      cii++;
+    }
+
+    //  clusters need to be saved only the ones within the given cluster size range
+    if (
+      (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
+        static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
+    {
+      pcl::PointIndices pi;
+      pi.header = input_->header;
+      pi.indices.resize (current_cluster.size ());
+      for (int ii = 0; ii < static_cast<int> (current_cluster.size ()); ++ii)  // ii = indices iterator
+        pi.indices[ii] = current_cluster[ii];
+
+      clusters.push_back (pi);
+    }
+
+
   }
 
   deinitCompute ();
