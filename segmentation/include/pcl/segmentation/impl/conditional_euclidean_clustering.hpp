@@ -145,6 +145,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment (pcl::IndicesClusters &clus
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesClusters &clusters)
 {
+  bool condition = true, conditionDisabled=(!condition_function_);
   // Prepare output (going to use push_back)
   clusters.clear ();
   if (extract_removed_clusters_)
@@ -154,7 +155,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesC
   }
 
   // Validity checks
-  if (!initCompute () || input_->points.empty () || indices_->empty () || !condition_function_)
+  if (!initCompute () || input_->points.empty () || indices_->empty ())
     return;
 
   // Initialize the search class
@@ -223,7 +224,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesC
           continue;
 
         // Validate if condition holds
-        if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
+        if (!conditionDisabled)
+          condition = condition_function_((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]);
+        if (condition)
         {
           float area, volume;
           if(cloud_cluster.back()->size()>10) //(tempHull1->size() > 4)
@@ -373,12 +376,13 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesC
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters &clusters)
 {
+  bool condition = true, conditionDisabled=(!condition_function_);
   // Prepare output (going to use push_back)
   clusters.clear ();
 
 
   // Validity checks
-  if (!initCompute () || input_->points.empty () || indices_->empty () || !condition_function_)
+  if (!initCompute () || input_->points.empty () || indices_->empty ())
     return;
 
   // Initialize the search class
@@ -412,7 +416,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
     int cii = 0;  // cii = cluster indices iterator
 
     // Add the point to the cluster
-    std::cout << "NEW CLUSTER - - - - - - - - - - - - - - \n";
     current_cluster.push_back (iindex);
 
     cloud_cluster.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
@@ -455,7 +458,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
           continue;
 
         // Validate if condition holds
-        if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
+        if (!conditionDisabled)
+          condition = condition_function_((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]);
+        if (condition)
         {
           float area, volume;
           if(cloud_cluster.back()->size()>40)
