@@ -616,6 +616,15 @@ namespace pcl
                     Eigen::Matrix<Scalar, 3, 3>& obb_rotational_matrix);
 
 
+
+  template <typename PointT, typename Scalar> inline unsigned int
+    computeCentroidAndOBB2(const pcl::PointCloud<PointT>& cloud,
+      Eigen::Matrix<Scalar, 3, 1>& centroid,
+      Eigen::Matrix<Scalar, 3, 1>& obb_center,
+      Eigen::Matrix<Scalar, 3, 1>& obb_dimensions,
+      Eigen::Matrix<Scalar, 3, 3>& obb_rotational_matrix);
+
+
     /** \brief Compute centroid, OBB, PCA axes of a given set of points.
     * OBB is oriented like the three axes (major, middle and minor) with
     * major_axis  = obb_rotational_matrix.col(0)
