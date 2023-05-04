@@ -463,9 +463,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
         if (condition)
         {
           float area, volume;
-          if(cloud_cluster.back()->size()>40)
+          if(cloud_cluster.back()->size()>50)//40
           {
-            if (cloud_cluster.back()->size() % 20 == 1)//this period must be a submultiple of the previous period
+            if (cloud_cluster.back()->size() % 50 == 1)//this period must be a submultiple of the previous period //20
             {
               Eigen::Matrix<float, 3, 1> temp_centroid=temp_centroid;
               Eigen::Matrix<float, 3, 3> temp_covariance_matrix=temp_covariance_matrix;
@@ -522,18 +522,18 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
               float y = std::abs(xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2));
               float z = std::abs(xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2));
 
-
-
-              if (//flatness condition
-                z*z <=
-                UnflatnessThreshold * (x*y)
-                )//unflatness: [0,1] 0:perfectly flat, 1:cube
-              {
-                // Add the point to the cluster
-                current_cluster.push_back(nn_indices[nii]);
-                cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-                processed[nn_indices[nii]] = clusterIndex;
-              }
+                if (//flatness condition
+                  (z<obb_dimensions[2]*0.5)||
+                  (z * z <=
+                  UnflatnessThreshold * (x * y))
+                  )//unflatness: [0,1] 0:perfectly flat, 1:cube
+                {
+                  // Add the point to the cluster
+                  current_cluster.push_back(nn_indices[nii]);
+                  cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+                  processed[nn_indices[nii]] = clusterIndex;
+                }
+              
 
             }
 
