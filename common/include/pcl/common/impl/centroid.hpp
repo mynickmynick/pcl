@@ -506,7 +506,7 @@ computeCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
 
 
 template <typename PointT, typename Scalar> inline unsigned int
-computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
+computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> cloud,
                                 Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
                                 Eigen::Matrix<Scalar, 4, 1> &centroid)
 {
@@ -522,9 +522,14 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   if (cloud.is_dense)
   {
     point_count = cloud.size ();
+#pragma omp parallel for \
+  firstprivate(cloud) \
+  num_threads(omp_get_num_procs())
     // For each point in the cloud
-    for (const auto& point: cloud)
+    //for (const auto& point: cloud)
+    for (std::ptrdiff_t i=0; i<cloud.points.size();++i)
     {
+      auto point = cloud.points[i];
       Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
       accu [0] += x * x;
       accu [1] += x * y;
@@ -540,8 +545,14 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   else
   {
     point_count = 0;
-    for (const auto& point: cloud)
+#pragma omp parallel for \
+  firstprivate(cloud) \
+  num_threads(omp_get_num_procs())
+    // For each point in the cloud
+    //for (const auto& point: cloud)
+    for (std::ptrdiff_t i=0; i<cloud.points.size();++i)
     {
+      auto point = cloud.points[i];
       if (!isFinite (point))
         continue;
 
