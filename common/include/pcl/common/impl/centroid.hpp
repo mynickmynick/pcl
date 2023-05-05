@@ -48,6 +48,7 @@
 #include <boost/fusion/algorithm/transformation/filter_if.hpp> // for boost::fusion::filter_if
 #include <boost/fusion/algorithm/iteration/for_each.hpp> // for boost::fusion::for_each
 #include <boost/mpl/size.hpp> // for boost::mpl::size
+#include <thread>
 
 
 namespace pcl
@@ -504,23 +505,20 @@ computeCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   return (computeCovarianceMatrix (cloud, indices.indices, covariance_matrix));
 }
 
-
-template <typename PointT, typename Scalar> inline unsigned int
-computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
-                                Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
-                                Eigen::Matrix<Scalar, 4, 1> &centroid)
+template <typename PointT, typename Scalar> void
+computeMeanAndCovarianceMatrixThread(const pcl::PointCloud<PointT>& cloud,
+  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> & accu,
+  std::size_t & point_count,
+  std::size_t i0,
+  std::size_t i1)
 {
-  // Shifted data/with estimate of mean. This gives very good accuracy and good performance.
-  // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
-  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
-
-  std::size_t point_count;
   if (cloud.is_dense)
   {
-    point_count = cloud.size ();
+    point_count = i1-i0;
     // For each point in the cloud
-    for (const auto& point: cloud)
+    for (size_t i=i0;i<i1;++i)
     {
+      auto point = cloud.points[i];
       Scalar x = point.x , y = point.y , z = point.z ;
       accu [0] += x * x;
       accu [1] += x * y;
@@ -536,8 +534,9 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   else
   {
     point_count = 0;
-    for (const auto& point: cloud)
+    for (size_t i=i0;i<i1;++i)
     {
+      auto point = cloud.points[i];
       if (!isFinite (point))
         continue;
 
@@ -554,6 +553,39 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
       ++point_count;
     }
   }
+}
+
+template <typename PointT, typename Scalar> inline unsigned int
+computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
+                                Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
+                                Eigen::Matrix<Scalar, 4, 1> &centroid)
+{
+  // Shifted data/with estimate of mean. This gives very good accuracy and good performance.
+  // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
+  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
+  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu1 = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
+  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu2 = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
+
+  std::size_t point_count, point_count1, point_count2;
+
+  std::thread th1(computeMeanAndCovarianceMatrixThread<PointT,Scalar>,
+    std::ref(cloud),
+    std::ref(accu1),
+    std::ref(point_count1),
+    0,
+    cloud.points.size() / 2);
+  std::thread th2(computeMeanAndCovarianceMatrixThread<PointT,Scalar>,
+    std::ref(cloud),
+    std::ref(accu2),
+    std::ref(point_count2),
+    cloud.points.size() / 2,
+    cloud.points.size());
+
+  th1.join(); th2.join();
+
+  point_count = point_count1 + point_count2;
+  accu = accu1 + accu2;
+
   if (point_count != 0)
   {
     accu /= static_cast<Scalar> (point_count);
