@@ -512,11 +512,7 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   // Shifted data/with estimate of mean. This gives very good accuracy and good performance.
   // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
   Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
-  Eigen::Matrix<Scalar, 3, 1> K(0.0, 0.0, 0.0);
-  for(const auto& point: cloud)
-    if(isFinite(point)) {
-      K.x() = point.x; K.y() = point.y; K.z() = point.z; break;
-    }
+
   std::size_t point_count;
   if (cloud.is_dense)
   {
@@ -524,7 +520,7 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
     // For each point in the cloud
     for (const auto& point: cloud)
     {
-      Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
+      Scalar x = point.x, y = point.y, z = point.z;
       accu [0] += x * x;
       accu [1] += x * y;
       accu [2] += x * z;
@@ -544,7 +540,7 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
       if (!isFinite (point))
         continue;
 
-      Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
+      Scalar x = point.x, y = point.y, z = point.z;
       accu [0] += x * x;
       accu [1] += x * y;
       accu [2] += x * z;
@@ -560,7 +556,7 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   if (point_count != 0)
   {
     accu /= static_cast<Scalar> (point_count);
-    centroid[0] = accu[6] + K.x(); centroid[1] = accu[7] + K.y(); centroid[2] = accu[8] + K.z();
+    centroid[0] = accu[6]; centroid[1] = accu[7]; centroid[2] = accu[8];
     centroid[3] = 1;
     covariance_matrix.coeffRef (0) = accu [0] - accu [6] * accu [6];
     covariance_matrix.coeffRef (1) = accu [1] - accu [6] * accu [7];
@@ -585,18 +581,14 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   // Shifted data/with estimate of mean. This gives very good accuracy and good performance.
   // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
   Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
-  Eigen::Matrix<Scalar, 3, 1> K(0.0, 0.0, 0.0);
-  for(const auto& index : indices)
-    if(isFinite(cloud[index])) {
-      K.x() = cloud[index].x; K.y() = cloud[index].y; K.z() = cloud[index].z; break;
-    }
+
   std::size_t point_count;
   if (cloud.is_dense)
   {
     point_count = indices.size ();
     for (const auto &index : indices)
     {
-      Scalar x = cloud[index].x - K.x(), y = cloud[index].y - K.y(), z = cloud[index].z - K.z();
+      Scalar x = cloud[index].x, y = cloud[index].y, z = cloud[index].z;
       accu [0] += x * x;
       accu [1] += x * y;
       accu [2] += x * z;
@@ -617,7 +609,7 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
         continue;
 
       ++point_count;
-      Scalar x = cloud[index].x - K.x(), y = cloud[index].y - K.y(), z = cloud[index].z - K.z();
+      Scalar x = cloud[index].x, y = cloud[index].y, z = cloud[index].z;
       accu [0] += x * x;
       accu [1] += x * y;
       accu [2] += x * z;
@@ -633,7 +625,7 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
   if (point_count != 0)
   {
     accu /= static_cast<Scalar> (point_count);
-    centroid[0] = accu[6] + K.x(); centroid[1] = accu[7] + K.y(); centroid[2] = accu[8] + K.z();
+    centroid[0] = accu[6]; centroid[1] = accu[7]; centroid[2] = accu[8];
     centroid[3] = 1;
     covariance_matrix.coeffRef (0) = accu [0] - accu [6] * accu [6];
     covariance_matrix.coeffRef (1) = accu [1] - accu [6] * accu [7];
