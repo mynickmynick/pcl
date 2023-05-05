@@ -622,7 +622,7 @@ namespace pcl
                     Eigen::Matrix<Scalar, 3, 3>& obb_rotational_matrix);
 
   template <typename PointT, typename Scalar> inline unsigned int
-    updateCentroidAndOBB(const pcl::PointCloud<PointT>& cloud,
+    updateCentroidAndOBB(const pcl::PointCloud<PointT> & cloud,
       Eigen::Matrix<Scalar, 3, 1>& centroid,
       Eigen::Matrix<Scalar, 3, 3>& covariance_matrix,
       Eigen::Matrix<Scalar, 3, 1>& obb_center,
