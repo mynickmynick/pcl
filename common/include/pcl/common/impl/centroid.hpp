@@ -506,7 +506,7 @@ computeCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
 
 
 template <typename PointT, typename Scalar> inline unsigned int
-computeMeanAndCovarianceMatrixOld (const pcl::PointCloud<PointT> &cloud,
+computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
                                 Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
                                 Eigen::Matrix<Scalar, 4, 1> &centroid)
 {
@@ -572,78 +572,6 @@ computeMeanAndCovarianceMatrixOld (const pcl::PointCloud<PointT> &cloud,
   return (static_cast<unsigned int> (point_count));
 }
 
-
-
-template <typename PointT, typename Scalar> inline unsigned int
-computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
-  Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
-  Eigen::Matrix<Scalar, 4, 1> &centroid)
-{
-  // Shifted data/with estimate of mean. This gives very good accuracy and good performance.
-  // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
-  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
-  Eigen::Matrix<Scalar, 3, 1> K(0.0, 0.0, 0.0);
-  for(const auto& point: cloud)
-    if(isFinite(point)) {
-      K.x() = point.x; K.y() = point.y; K.z() = point.z; break;
-    }
-  std::size_t point_count;
-  if (cloud.is_dense)
-  {
-    point_count = cloud.size ();
-    // For each point in the cloud
-    for (const auto& point: cloud)
-    {
-      Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
-      accu [0] += x * x;
-      accu [1] += x * y;
-      accu [2] += x * z;
-      accu [3] += y * y;
-      accu [4] += y * z;
-      accu [5] += z * z;
-      accu [6] += x;
-      accu [7] += y;
-      accu [8] += z;
-    }
-  }
-  else
-  {
-    point_count = 0;
-    for (const auto& point: cloud)
-    {
-      if (!isFinite (point))
-        continue;
-
-      Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
-      accu [0] += x * x;
-      accu [1] += x * y;
-      accu [2] += x * z;
-      accu [3] += y * y;
-      accu [4] += y * z;
-      accu [5] += z * z;
-      accu [6] += x;
-      accu [7] += y;
-      accu [8] += z;
-      ++point_count;
-    }
-  }
-  if (point_count != 0)
-  {
-    accu /= static_cast<Scalar> (point_count);
-    centroid[0] = accu[6] + K.x(); centroid[1] = accu[7] + K.y(); centroid[2] = accu[8] + K.z();//effective mean E[P=(x,y,z)]
-    centroid[3] = 1;
-    covariance_matrix.coeffRef (0) = accu [0] - accu [6] * accu [6];//(0,0)xx : E[(x-E[x])^2]=E[x^2]-E[x]^2=E[(x-Kx)^2]-E[x-Kx]^2
-    covariance_matrix.coeffRef (1) = accu [1] - accu [6] * accu [7];//(0,1)xy : E[(x-E[x])(y-E[y])]=E[xy]-E[x]E[y]=E[(x-Kx)(y-Ky)]-E[x-Kx]E[y-Ky]
-    covariance_matrix.coeffRef (2) = accu [2] - accu [6] * accu [8];//(0,2)xz
-    covariance_matrix.coeffRef (4) = accu [3] - accu [7] * accu [7];//(1,1)yy
-    covariance_matrix.coeffRef (5) = accu [4] - accu [7] * accu [8];//(1,2)yz
-    covariance_matrix.coeffRef (8) = accu [5] - accu [8] * accu [8];//(2,2)zz
-    covariance_matrix.coeffRef (3) = covariance_matrix.coeff (1);   //(1,0)yx
-    covariance_matrix.coeffRef (6) = covariance_matrix.coeff (2);   //(2,0)zx
-    covariance_matrix.coeffRef (7) = covariance_matrix.coeff (5);   //(2,1)zy
-  }
-  return (static_cast<unsigned int> (point_count));
-}
 
 
 template <typename PointT, typename Scalar> inline unsigned int
