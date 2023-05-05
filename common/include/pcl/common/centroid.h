@@ -400,9 +400,14 @@ namespace pcl
     * \ingroup common
     */
   template <typename PointT, typename Scalar> inline unsigned int
-  computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
+  computeMeanAndCovarianceMatrixOld (const pcl::PointCloud<PointT> &cloud,
                                   Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
                                   Eigen::Matrix<Scalar, 4, 1> &centroid);
+
+  template <typename PointT, typename Scalar> inline unsigned int
+    computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
+      Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
+      Eigen::Matrix<Scalar, 4, 1> &centroid);
 
   template <typename PointT, typename Scalar> inline unsigned int
     updateMeanAndCovarianceMatrix(const pcl::PointCloud<PointT>& cloud,
