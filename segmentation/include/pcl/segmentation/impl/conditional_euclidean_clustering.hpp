@@ -583,6 +583,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
 
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
+  SearcherPtr& searcher_,
     std::mutex & clusters_mutex,
   std::vector<size_t> & processed,
   std::vector<std::shared_mutex> & processed_mutex,
@@ -597,17 +598,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
   }
 
   std::set<std::pair<size_t, size_t>> local_connections;
-  SearcherPtr searcher_;
-  // Initialize the search class
-  if (!searcher_)
-  {
-    if (input_->isOrganized ())
-      searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
-    else
-      searcher_.reset (new pcl::search::KdTree<PointT> ());
-  }
-  searcher_->setInputCloud (input_, indices_);
-
 
   // Temp variables used by search class
   Indices nn_indices;
@@ -733,6 +723,17 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
   std::mutex clusters_mutex;
   current_cluster_index = 0;
 
+  SearcherPtr searcher_;
+  // Initialize the search class
+  if (!searcher_)
+  {
+    if (input_->isOrganized ())
+      searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
+    else
+      searcher_.reset (new pcl::search::KdTree<PointT> ());
+  }
+  searcher_->setInputCloud (input_, indices_);
+
   // Validity checks
   if (!initCompute () || input_->points.empty () || indices_->empty () || !condition_function_)
     return;
@@ -752,6 +753,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
       i1 = indices_->size();
 
     ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThread,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
+      std::ref(searcher_),
       std::ref(clusters_mutex),
       std::ref(processed),
       std::ref(processed_mutex),
