@@ -43,6 +43,7 @@
 #include <pcl/surface/convex_hull.h>
 #include <pcl/common/centroid.h>
 #include <vector>
+#include <algorithm>
 
 
 
@@ -708,8 +709,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
       pcl::PointIndices pi;
       pi.header = input_->header;
       pi.indices.resize (current_cluster.size ());
-      for (int ii = 0; ii < static_cast<int> (current_cluster.size ()); ++ii)  // ii = indices iterator
-        pi.indices[ii] = current_cluster[ii];
+      //for (int ii = 0; ii < static_cast<int> (current_cluster.size ()); ++ii)  // ii = indices iterator
+      //  pi.indices[ii] = current_cluster[ii];
+      std::copy(current_cluster.begin(), current_cluster.end(), pi.indices.begin());
 
       {
         const std::lock_guard<std::mutex> lock(clusters_mutex);
@@ -813,15 +815,18 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
         pi.header = input_->header;
         pi.indices.resize (ss);
 
-        size_t pii = 0;
+        //size_t pii = 0;
+        auto pii = pi.indices.begin();
         
         for (auto& c : p)
         {
 
           if (clusterRecords.count(c))
           {
-            for (int ii = 0; ii < static_cast<int> (clusterRecords[c].indices.size()); ++ii, ++pii)  // ii = indices iterator
-              pi.indices[pii] = clusterRecords[c].indices[ii];
+            //for (int ii = 0; ii < static_cast<int> (clusterRecords[c].indices.size()); ++ii, ++pii)  // ii = indices iterator
+            //  pi.indices[pii] = clusterRecords[c].indices[ii];
+            pii=std::copy(clusterRecords[c].indices.begin(), clusterRecords[c].indices.end(), pii);
+
 
             clusterRecords.erase(c);
           }
@@ -840,8 +845,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
       pcl::PointIndices pi;
       pi.header = input_->header;
       pi.indices.resize (c.second.indices.size());
-      for (int ii = 0; ii < static_cast<int> (c.second.indices.size()); ++ii)  // ii = indices iterator
-        pi.indices[ii] = c.second.indices[ii];
+      //for (int ii = 0; ii < static_cast<int> (c.second.indices.size()); ++ii)  // ii = indices iterator
+      //  pi.indices[ii] = c.second.indices[ii];
+      std::copy(c.second.indices.begin(), c.second.indices.end(), pi.indices.begin());
       clusters.push_back (pi);
     }
   }
