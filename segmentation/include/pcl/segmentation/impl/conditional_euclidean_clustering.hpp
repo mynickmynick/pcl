@@ -619,7 +619,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
       continue;
 
     // Set up a new growing cluster
-    Indices current_cluster;
+    pcl::PointIndices pi;
+    pi.header = input_->header;
+    Indices & current_cluster=pi.indices;
     int cii = 0;  // cii = cluster indices iterator
 
     // Add the FIRST point to the cluster
@@ -688,11 +690,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
     }
 
 
-    {
-      pcl::PointIndices pi;
-      pi.header = input_->header;
-      pi.indices.resize (current_cluster.size ());
-      std::copy(current_cluster.begin(), current_cluster.end(), pi.indices.begin());
+    
 
       {
         const std::lock_guard<std::mutex> lock(clusters_mutex);
@@ -704,7 +702,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
             max_cluster_index = local_current_cluster_index;
           local_current_cluster_index=++current_cluster_index;
       }
-    }
+    
 
 
   }
