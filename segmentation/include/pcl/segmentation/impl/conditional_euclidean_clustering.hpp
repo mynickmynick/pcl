@@ -608,13 +608,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
   }
   searcher_->setInputCloud (input_, indices_);
 
+
   // Temp variables used by search class
   Indices nn_indices;
   std::vector<float> nn_distances;
 
   // Process all points indexed by indices_
-  //for (const auto& iindex : (*indices_)) // iindex = input index
-  //for(size_t i=0;i<indices_->size();++i)
   for(size_t i=i0;i<i1;++i)
   {
     auto iindex = (*indices_)[i];
@@ -701,16 +700,11 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
       cii++;
     }
 
-    // che ck to be done later  only the ones within the given cluster size range
-    //if (
-    //    (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
-    //     static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
+
     {
       pcl::PointIndices pi;
       pi.header = input_->header;
       pi.indices.resize (current_cluster.size ());
-      //for (int ii = 0; ii < static_cast<int> (current_cluster.size ()); ++ii)  // ii = indices iterator
-      //  pi.indices[ii] = current_cluster[ii];
       std::copy(current_cluster.begin(), current_cluster.end(), pi.indices.begin());
 
       {
@@ -815,7 +809,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
         pi.header = input_->header;
         pi.indices.resize (ss);
 
-        //size_t pii = 0;
         auto pii = pi.indices.begin();
         
         for (auto& c : p)
@@ -823,11 +816,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
           if (clusterRecords.count(c))
           {
-            //for (int ii = 0; ii < static_cast<int> (clusterRecords[c].indices.size()); ++ii, ++pii)  // ii = indices iterator
-            //  pi.indices[pii] = clusterRecords[c].indices[ii];
             pii=std::copy(clusterRecords[c].indices.begin(), clusterRecords[c].indices.end(), pii);
-
-
             clusterRecords.erase(c);
           }
 
@@ -845,8 +834,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
       pcl::PointIndices pi;
       pi.header = input_->header;
       pi.indices.resize (c.second.indices.size());
-      //for (int ii = 0; ii < static_cast<int> (c.second.indices.size()); ++ii)  // ii = indices iterator
-      //  pi.indices[ii] = c.second.indices[ii];
+
       std::copy(c.second.indices.begin(), c.second.indices.end(), pi.indices.begin());
       clusters.push_back (pi);
     }
