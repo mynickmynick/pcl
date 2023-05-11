@@ -44,7 +44,9 @@
 #include <pcl/point_types.h>
 #include <pcl/console/print.h> // for PCL_WARN
 #include <pcl/search/search.h> // for Search
-
+#include <shared_mutex>
+#include <set>
+#include <map>
 
 #include <functional>
 //#include <vector>
@@ -89,6 +91,7 @@ namespace pcl
   template<typename PointT>
   class ConditionalEuclideanClustering : public PCLBase<PointT>
   {
+
     protected:
       using SearcherPtr = typename pcl::search::Search<PointT>::Ptr;
 
@@ -226,6 +229,16 @@ namespace pcl
       segment (IndicesClusters &clusters);
 
       void
+      segmentThread(
+          std::mutex& clusters_mutex,
+          std::vector<size_t>& processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          size_t i0, size_t i1
+        );
+      void
+      segmentMT (IndicesClusters &clusters, const size_t threadNumber=2);
+
+      void
       segment_ByConvexHull(IndicesClusters& clusters);
 
       void
@@ -285,8 +298,20 @@ namespace pcl
 
       
       std::vector<PointCloudPtr> cloud_cluster;
-      //std::vector<PointCloudPtr> cloud_cluster_hull;
+
       float UnflatnessThreshold=0.25;
+
+      // start of critical section
+      std::shared_mutex connections_mutex;
+      std::set<std::pair<size_t, size_t>> connections;
+      size_t current_cluster_index = 1;//[1..]
+      size_t max_cluster_index = 1;//[1..]
+      //end of critical section
+
+      //typedef struct{ pcl::PointIndices pi;  size_t index; } ClusterRecord;
+      //std::vector<ClusterRecord> clusterRecords;
+      std::map<size_t, pcl::PointIndices> clusterRecords;
+
 
     public:
       PCL_MAKE_ALIGNED_OPERATOR_NEW

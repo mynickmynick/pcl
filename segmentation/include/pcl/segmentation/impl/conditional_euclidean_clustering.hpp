@@ -42,6 +42,9 @@
 #include <pcl/search/kdtree.h> // for KdTree
 #include <pcl/surface/convex_hull.h>
 #include <pcl/common/centroid.h>
+#include <vector>
+
+
 
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segment (pcl::IndicesClusters &clusters)
@@ -574,6 +577,279 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
 
   deinitCompute ();
 }
+
+
+
+template<typename PointT> void
+pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
+    std::mutex & clusters_mutex,
+  std::vector<size_t> & processed,
+  std::vector<std::shared_mutex> & processed_mutex,
+  size_t i0, size_t i1
+
+)
+{
+  size_t local_current_cluster_index = 1;//[1..]
+  {
+      std::unique_lock<std::shared_mutex> ul(connections_mutex);
+      local_current_cluster_index=++current_cluster_index;
+  }
+
+  std::set<std::pair<size_t, size_t>> local_connections;
+  SearcherPtr searcher_;
+  // Initialize the search class
+  if (!searcher_)
+  {
+    if (input_->isOrganized ())
+      searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
+    else
+      searcher_.reset (new pcl::search::KdTree<PointT> ());
+  }
+  searcher_->setInputCloud (input_, indices_);
+
+  // Temp variables used by search class
+  Indices nn_indices;
+  std::vector<float> nn_distances;
+
+  // Process all points indexed by indices_
+  //for (const auto& iindex : (*indices_)) // iindex = input index
+  //for(size_t i=0;i<indices_->size();++i)
+  for(size_t i=i0;i<i1;++i)
+  {
+    auto iindex = (*indices_)[i];
+
+    size_t processed_ = 0;
+    {
+      std::shared_lock<std::shared_mutex> slock(processed_mutex[iindex]);
+      processed_ = processed[iindex];
+    }
+
+    // Has this point been processed before?
+    if (iindex == UNAVAILABLE || processed_)
+      continue;
+
+    // Set up a new growing cluster
+    Indices current_cluster;
+    int cii = 0;  // cii = cluster indices iterator
+
+    // Add the FIRST point to the cluster
+    current_cluster.push_back (iindex);
+    {
+      std::unique_lock<std::shared_mutex> ulock(processed_mutex[iindex]);
+      processed[iindex] = local_current_cluster_index;
+    }
+
+    // Process the current cluster (it can be growing in size as it is being processed)
+    while (cii < static_cast<int> (current_cluster.size ()))
+    {
+      // Search for neighbors around the current seed point of the current cluster
+      if (searcher_->radiusSearch ((*input_)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances) < 1)
+      {
+        cii++;
+        continue;
+      }
+
+      // Process the neighbors
+      for (int nii = 1; nii < static_cast<int> (nn_indices.size ()); ++nii)  // nii = neighbor indices iterator
+      {
+        size_t processed_ = 0;
+        {
+          std::shared_lock<std::shared_mutex> slock(processed_mutex[nn_indices[nii]]);
+          processed_ = processed[nn_indices[nii]];
+        }
+
+        // Has this point been processed before?
+        if (nn_indices[nii] == UNAVAILABLE )
+          continue;
+        // Has this point been processed before?
+        if (processed_)
+        {
+          if (processed_ == local_current_cluster_index)
+            continue;
+        }
+
+
+        // Validate if condition holds
+        if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
+        {
+          if (processed_ && processed_ != local_current_cluster_index)
+          {
+            std::pair<size_t, size_t> p;
+            p.first = local_current_cluster_index; p.second= processed_;
+            if (!local_connections.count(p))
+            {
+              local_connections.insert(p);
+              {
+                std::unique_lock<std::shared_mutex> ul(connections_mutex);
+                connections.insert(p);//the two growing clusters will have to be connected
+              }
+            }
+
+
+          }
+          else
+          {
+            // Add the point to the cluster
+            current_cluster.push_back (nn_indices[nii]);
+            processed[nn_indices[nii]] = local_current_cluster_index;
+          }
+
+
+        }
+      }
+      cii++;
+    }
+
+    // che ck to be done later  only the ones within the given cluster size range
+    if (
+        (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
+         static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
+    {
+      pcl::PointIndices pi;
+      pi.header = input_->header;
+      pi.indices.resize (current_cluster.size ());
+      for (int ii = 0; ii < static_cast<int> (current_cluster.size ()); ++ii)  // ii = indices iterator
+        pi.indices[ii] = current_cluster[ii];
+
+      {
+        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        clusterRecords[local_current_cluster_index]=pi;
+      }
+      {
+          std::unique_lock<std::shared_mutex> ul(connections_mutex);
+          if (local_current_cluster_index> max_cluster_index)
+            max_cluster_index = local_current_cluster_index;
+          local_current_cluster_index=++current_cluster_index;
+      }
+    }
+
+
+  }
+}
+
+
+
+template<typename PointT> void
+pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &clusters, const size_t threadNumber)
+{
+  // Prepare output (going to use push_back)
+  clusters.clear ();
+  std::mutex clusters_mutex;
+  current_cluster_index = 0;
+
+  // Validity checks
+  if (!initCompute () || input_->points.empty () || indices_->empty () || !condition_function_)
+    return;
+
+  // Create a bool vector of processed point indices, and initialize it to false
+  // Need to have it contain all possible points because radius search can not return indices into indices
+  std::vector<size_t> processed (input_->size (), 0);
+  std::vector<std::shared_mutex> processed_mutex(input_->size ());
+
+  size_t chunk = indices_->size() / threadNumber;
+  std::vector<std::thread> ThPool;
+  size_t i0 = 0;
+  size_t i1 = chunk;
+  for (size_t t = 0; t < threadNumber; ++t)
+  {
+    if (t == threadNumber - 1)
+      i1 = indices_->size();
+
+    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThread,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
+      std::ref(clusters_mutex),
+      std::ref(processed),
+      std::ref(processed_mutex),
+      i0, i1
+    )));
+    i0 += chunk;
+    i1 += chunk;
+  }
+
+  for (size_t t = 0; t < threadNumber; ++t)
+    ThPool[t].join();
+
+  std::vector<std::set<size_t>> partition;//only partial partitions cause it doesn't include singletons
+  for (auto& conn : connections)
+  {
+    bool found = false;
+    for (auto& s : partition)
+    {
+      if (s.count(conn.first))
+      {
+        found = true;
+        s.insert(conn.second);
+        break;
+      }
+      if (s.count(conn.second))
+      {
+        found = true;
+        s.insert(conn.first);
+        break;
+      }
+    }
+    if (!found)
+    {
+      std::set<size_t> s;
+      s.insert(conn.first);
+      s.insert(conn.second);
+      partition.push_back(s);
+    }
+  }
+  for (auto & p: partition)
+  {
+    size_t ss = 0;
+    for (auto& c : p)
+    {
+      if (clusterRecords.count(c))
+      {
+        ss += clusterRecords[c].indices.size();
+      }
+    }
+    if (
+      static_cast<int> (ss) >= min_cluster_size_ &&
+      static_cast<int> (ss) <= max_cluster_size_)
+    {
+        pcl::PointIndices pi;
+        pi.header = input_->header;
+        pi.indices.resize (ss);
+
+        size_t pii = 0;
+        
+        for (auto& c : p)
+        {
+
+          if (clusterRecords.count(c))
+          {
+            for (int ii = 0; ii < static_cast<int> (clusterRecords[c].indices.size()); ++ii, ++pii)  // ii = indices iterator
+              pi.indices[pii] = clusterRecords[c].indices[ii];
+
+            clusterRecords.erase(c);
+          }
+
+        }
+        clusters.push_back (pi);
+    }
+
+  }
+  for (auto& c : clusterRecords)
+  {
+    if (
+      static_cast<int> (c.second.indices.size()) >= min_cluster_size_ &&
+      static_cast<int> (c.second.indices.size()) <= max_cluster_size_)
+    {
+      pcl::PointIndices pi;
+      pi.header = input_->header;
+      pi.indices.resize (c.second.indices.size());
+      for (int ii = 0; ii < static_cast<int> (c.second.indices.size()); ++ii)  // ii = indices iterator
+        pi.indices[ii] = c.second.indices[ii];
+      clusters.push_back (pi);
+    }
+  }
+
+
+  deinitCompute ();
+}
+
 
 
 #define PCL_INSTANTIATE_ConditionalEuclideanClustering(T) template class PCL_EXPORTS pcl::ConditionalEuclideanClustering<T>;
