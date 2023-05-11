@@ -229,14 +229,6 @@ namespace pcl
       segment (IndicesClusters &clusters);
 
       void
-      segmentThread(
-        SearcherPtr& searcher_,
-          std::mutex& clusters_mutex,
-          std::vector<size_t>& processed,
-          std::vector<std::shared_mutex> & processed_mutex,
-          size_t i0, size_t i1
-        );
-      void
       segmentMT (IndicesClusters &clusters, const size_t threadNumber=2);
 
       void
@@ -312,6 +304,15 @@ namespace pcl
       //typedef struct{ pcl::PointIndices pi;  size_t index; } ClusterRecord;
       //std::vector<ClusterRecord> clusterRecords;
       std::map<size_t, pcl::PointIndices> clusterRecords;
+
+      void
+        segmentThread(
+          SearcherPtr& searcher_,
+          std::mutex& clusters_mutex,
+          std::vector<size_t>& processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          size_t i0, size_t i1
+        );
 
 
     public:

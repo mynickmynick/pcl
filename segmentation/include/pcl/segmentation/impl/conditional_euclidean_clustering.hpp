@@ -642,6 +642,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
       // Process the neighbors
       for (int nii = 1; nii < static_cast<int> (nn_indices.size ()); ++nii)  // nii = neighbor indices iterator
       {
+        // Has this point been processed before?
+        if (nn_indices[nii] == UNAVAILABLE )
+          continue;
+
         size_t processed_ = 0;
         {
           std::shared_lock<std::shared_mutex> slock(processed_mutex[nn_indices[nii]]);
@@ -649,15 +653,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
         }
 
         // Has this point been processed before?
-        if (nn_indices[nii] == UNAVAILABLE )
+        if (processed_ == local_current_cluster_index)
           continue;
-        // Has this point been processed before?
-        if (processed_)
-        {
-          if (processed_ == local_current_cluster_index)
-            continue;
-        }
-
 
         // Validate if condition holds
         if (condition_function_ ((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
