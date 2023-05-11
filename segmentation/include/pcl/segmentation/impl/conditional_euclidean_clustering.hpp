@@ -701,9 +701,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
     }
 
     // che ck to be done later  only the ones within the given cluster size range
-    if (
-        (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
-         static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
+    //if (
+    //    (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
+    //     static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
     {
       pcl::PointIndices pi;
       pi.header = input_->header;
