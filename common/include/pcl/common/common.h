@@ -198,6 +198,9 @@ namespace pcl
   template <typename PointT> inline void 
   getMinMax3D (const pcl::PointCloud<PointT> &cloud, 
                Eigen::Vector4f &min_pt, Eigen::Vector4f &max_pt);
+  template <typename PointT> inline void 
+    getMinMax3D (const pcl::PointCloud<PointT> &cloud, 
+      Eigen::Vector4d &min_pt, Eigen::Vector4d &max_pt);
 
   /** \brief Get the minimum and maximum values on each of the 3 (x-y-z) dimensions in a given pointcloud
     * \param[in] cloud the point cloud data message

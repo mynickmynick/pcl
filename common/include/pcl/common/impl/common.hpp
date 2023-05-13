@@ -334,6 +334,39 @@ pcl::getMinMax3D (const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &min_pt,
   }
 }
 
+template <typename PointT> inline void
+pcl::getMinMax3D (const pcl::PointCloud<PointT> &cloud, Eigen::Vector4d &min_pt, Eigen::Vector4d &max_pt)
+{
+  min_pt.setConstant (std::numeric_limits<double>::max());
+  max_pt.setConstant (std::numeric_limits<double>::lowest());
+
+  // If the data is dense, we don't need to check for NaN
+  if (cloud.is_dense)
+  {
+    for (const auto& point: cloud.points)
+    {
+      const pcl::Vector4dMapConst pt = point.getVector4dMap ();
+      min_pt = min_pt.cwiseMin (pt);
+      max_pt = max_pt.cwiseMax (pt);
+    }
+  }
+  // NaN or Inf values could exist => check for them
+  else
+  {
+    for (const auto& point: cloud.points)
+    {
+      // Check if the point is invalid
+      if (!std::isfinite (point.x) ||
+        !std::isfinite (point.y) ||
+        !std::isfinite (point.z))
+        continue;
+      const pcl::Vector4dMapConst pt = point.getVector4dMap ();
+      min_pt = min_pt.cwiseMin (pt);
+      max_pt = max_pt.cwiseMax (pt);
+    }
+  }
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> inline void

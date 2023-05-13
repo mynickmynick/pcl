@@ -62,6 +62,7 @@
 // Define all PCL point types
 #define PCL_POINT_TYPES         \
   (pcl::PointXYZ)               \
+  (pcl::PointXYZd)               \
   (pcl::PointXYZI)              \
   (pcl::PointXYZL)              \
   (pcl::Label)                  \
@@ -121,6 +122,7 @@
 // Define all point types that include XYZ data
 #define PCL_XYZ_POINT_TYPES   \
   (pcl::PointXYZ)             \
+  (pcl::PointXYZd)             \
   (pcl::PointXYZI)            \
   (pcl::PointXYZL)            \
   (pcl::PointXYZRGBA)         \
@@ -230,6 +232,18 @@ namespace pcl
   using Vector4fMap = Eigen::Map<Eigen::Vector4f, Eigen::Aligned>;
   using Vector4fMapConst = const Eigen::Map<const Eigen::Vector4f, Eigen::Aligned>;
 
+  using Vector2dMap = Eigen::Map<Eigen::Vector2d>;
+  using Vector2dMapConst = const Eigen::Map<const Eigen::Vector2d>;
+  using Array3dMap = Eigen::Map<Eigen::Array3d>;
+  using Array3dMapConst = const Eigen::Map<const Eigen::Array3d>;
+  using Array4dMap = Eigen::Map<Eigen::Array4d, Eigen::Aligned>;
+  using Array4dMapConst = const Eigen::Map<const Eigen::Array4d, Eigen::Aligned>;
+  using Vector3dMap = Eigen::Map<Eigen::Vector3d>;
+  using Vector3dMapConst = const Eigen::Map<const Eigen::Vector3d>;
+  using Vector4dMap = Eigen::Map<Eigen::Vector4d, Eigen::Aligned>;
+  using Vector4dMapConst = const Eigen::Map<const Eigen::Vector4d, Eigen::Aligned>;
+
+
   using Vector3c = Eigen::Matrix<std::uint8_t, 3, 1>;
   using Vector3cMap = Eigen::Map<Vector3c>;
   using Vector3cMapConst = const Eigen::Map<const Vector3c>;
@@ -247,6 +261,16 @@ namespace pcl
     }; \
   };
 
+#define PCL_ADD_UNION_POINTd4D \
+  union EIGEN_ALIGN16 { \
+    double data[4]; \
+    struct { \
+      double x; \
+      double y; \
+      double z; \
+    }; \
+  };
+
 #define PCL_ADD_EIGEN_MAPS_POINT4D \
   inline pcl::Vector2fMap getVector2fMap () { return (pcl::Vector2fMap (data)); } \
   inline pcl::Vector2fMapConst getVector2fMap () const { return (pcl::Vector2fMapConst (data)); } \
@@ -259,9 +283,25 @@ namespace pcl
   inline pcl::Array4fMap getArray4fMap () { return (pcl::Array4fMap (data)); } \
   inline pcl::Array4fMapConst getArray4fMap () const { return (pcl::Array4fMapConst (data)); }
 
+#define PCL_ADD_EIGEN_MAPS_POINTd4D \
+  inline pcl::Vector2dMap getVector2fMap () { return (pcl::Vector2dMap (data)); } \
+  inline pcl::Vector2dMapConst getVector2fMap () const { return (pcl::Vector2dMapConst (data)); } \
+  inline pcl::Vector3dMap getVector3fMap () { return (pcl::Vector3dMap (data)); } \
+  inline pcl::Vector3dMapConst getVector3fMap () const { return (pcl::Vector3dMapConst (data)); } \
+  inline pcl::Vector4dMap getVector4fMap () { return (pcl::Vector4dMap (data)); } \
+  inline pcl::Vector4dMapConst getVector4fMap () const { return (pcl::Vector4dMapConst (data)); } \
+  inline pcl::Array3dMap getArray3fMap () { return (pcl::Array3dMap (data)); } \
+  inline pcl::Array3dMapConst getArray3fMap () const { return (pcl::Array3dMapConst (data)); } \
+  inline pcl::Array4dMap getArray4fMap () { return (pcl::Array4dMap (data)); } \
+  inline pcl::Array4dMapConst getArray4fMap () const { return (pcl::Array4dMapConst (data)); }
+
 #define PCL_ADD_POINT4D \
   PCL_ADD_UNION_POINT4D \
   PCL_ADD_EIGEN_MAPS_POINT4D
+
+#define PCL_ADD_POINTd4D \
+  PCL_ADD_UNION_POINTd4D \
+  PCL_ADD_EIGEN_MAPS_POINTd4D
 
 #define PCL_ADD_UNION_NORMAL4D \
   union EIGEN_ALIGN16 { \
@@ -343,7 +383,15 @@ namespace pcl
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
+  struct _PointXYZd
+  {
+    PCL_ADD_POINTd4D; // This adds the members x,y,z which can also be accessed using the point (which is double[4])
+
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
   PCL_EXPORTS std::ostream& operator << (std::ostream& os, const PointXYZ& p);
+
   /** \brief A point structure representing Euclidean xyz coordinates. (SSE friendly)
     * \ingroup common
     */
@@ -356,6 +404,17 @@ namespace pcl
     inline constexpr PointXYZ (float _x, float _y, float _z) : _PointXYZ{{{_x, _y, _z, 1.f}}} {}
 
     friend std::ostream& operator << (std::ostream& os, const PointXYZ& p);
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
+  };
+  struct EIGEN_ALIGN16 PointXYZd : public _PointXYZd
+  {
+    inline constexpr PointXYZd (const _PointXYZd &p): PointXYZd(p.x, p.y, p.z) {}
+
+    inline constexpr PointXYZd (): PointXYZd(0., 0., 0.) {}
+
+    inline constexpr PointXYZd (double _x, double _y, double _z) : _PointXYZd{{{_x, _y, _z, 1.}}} {}
+
+    friend std::ostream& operator << (std::ostream& os, const PointXYZd& p);
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
