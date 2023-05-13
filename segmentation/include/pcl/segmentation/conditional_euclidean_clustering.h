@@ -236,6 +236,8 @@ namespace pcl
 
       void
       segment_ByOBB(IndicesClusters& clusters);
+      void
+      segment_ByOBBMT(IndicesClusters& clusters, const size_t threadNumber=2);
 
 
       /** \brief Get the clusters that are invalidated due to size constraints.
@@ -301,8 +303,6 @@ namespace pcl
       size_t max_cluster_index = 1;//[1..]
       //end of critical section
 
-      //typedef struct{ pcl::PointIndices pi;  size_t index; } ClusterRecord;
-      //std::vector<ClusterRecord> clusterRecords;
       std::map<size_t, pcl::PointIndices> clusterRecords;
 
       void
@@ -312,6 +312,16 @@ namespace pcl
           std::vector<size_t>& processed,
           std::vector<std::shared_mutex> & processed_mutex,
           size_t i0, size_t i1
+        );
+
+        void
+        segment_ByOBBThread(
+          SearcherPtr& searcher_,
+          pcl::IndicesClusters &clusters,
+          std::mutex& clusters_mutex,
+          std::vector<std::set<size_t>> & processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          size_t i0, size_t i1, bool record_connections
         );
 
 

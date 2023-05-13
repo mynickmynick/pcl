@@ -408,7 +408,8 @@ namespace pcl
     updateMeanAndCovarianceMatrix(const pcl::PointCloud<PointT>& cloud,
       Eigen::Matrix<Scalar, 3, 3>& covariance_matrix,
       Eigen::Matrix<Scalar, 4, 1>& centroid,
-      unsigned int oldSize=0);
+      unsigned int oldSize,
+      size_t & point_count);
 
   template <typename PointT> inline unsigned int
   computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
@@ -444,6 +445,14 @@ namespace pcl
                                   const Indices &indices,
                                   Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
                                   Eigen::Matrix<Scalar, 4, 1> &centroid);
+  //to be done
+  template <typename PointT, typename Scalar> inline unsigned int
+  updateMeanAndCovarianceMatrix(const pcl::PointCloud<PointT>& cloud,
+                                  const Indices &indices,
+                                Eigen::Matrix<Scalar, 3, 3>& covariance_matrix,
+                                Eigen::Matrix<Scalar, 4, 1>& centroid,
+                                 unsigned int oldSize,
+                                  size_t & point_count);
 
   template <typename PointT> inline unsigned int
   computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
@@ -628,7 +637,8 @@ namespace pcl
       Eigen::Matrix<Scalar, 3, 1>& obb_center,
       Eigen::Matrix<Scalar, 3, 1>& obb_dimensions,
       Eigen::Matrix<Scalar, 3, 3>& obb_rotational_matrix,
-      unsigned int & oldSize);
+      unsigned int & oldSize,
+                                  size_t & point_count);
 
 
     /** \brief Compute centroid, OBB, PCA axes of a given set of points.
