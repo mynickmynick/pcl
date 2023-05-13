@@ -709,15 +709,15 @@ updateMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
         Scalar newWeight = 1.0-oldWeight;
         Eigen::Matrix<Scalar, 4, 1> oldCentroid = centroid;
         accu /= static_cast<Scalar> (point_count);
-        centroid[0] = oldWeight*centroid[0] + newWeight*accu[6] ;
-        centroid[1] = oldWeight*centroid[1] + newWeight*accu[7] ;
-        centroid[2] = oldWeight*centroid[2] + newWeight*accu[8] ;//effective mean E[P=(x,y,z)]
+        centroid[0] = oldWeight*centroid[0] + newWeight*accu[6] ;//effective mean E[x]
+        centroid[1] = oldWeight*centroid[1] + newWeight*accu[7] ;//effective mean E[y]
+        centroid[2] = oldWeight*centroid[2] + newWeight*accu[8] ;//effective mean E[z]
         centroid[3] = 1;
 
         covariance_matrix.coeffRef(0) =
           oldWeight*(covariance_matrix.coeffRef(0)+oldCentroid[0]*oldCentroid[0]) //old(E[x^2])==oldaccu[0]==covariance_matrix.coeffRef(0)+oldCentroid[0]*oldCentroid[0]
           //E[x^2]==oldWeight*old(E[x^2])+newWeight*new(E[x^2])
-          +newWeight*accu[0] - centroid[0]*centroid[0];//(0,0)xx : E[(x-E[x])^2]=E[x^2]-E[x]^2=E[(x-Kx)^2]-E[x-Kx]^2
+          +newWeight*accu[0] - centroid[0]*centroid[0];//(0,0)xx : E[(x-E[x])^2]=E[x^2]-E[x]^2//////////=E[(x-Kx)^2]-E[x-Kx]^2
         covariance_matrix.coeffRef(1) =
           oldWeight*(covariance_matrix.coeffRef(1)+oldCentroid[0]*oldCentroid[1])
           +newWeight*accu[1] - centroid[0]*centroid[1];//(0,1)xy : E[(x-E[x])(y-E[y])]=E[xy]-E[x]E[y]=E[(x-Kx)(y-Ky)]-E[x-Kx]E[y-Ky]
@@ -1197,9 +1197,9 @@ updateCentroidAndOBB (const pcl::PointCloud<PointT> &cloud,
 
         Scalar xd = point.x - centroid[0], yd = point.y - centroid[1], zd = point.z - centroid[2];
 
-        Scalar x = xd * major_axis(0) + yd * major_axis(1) + zd * major_axis(2);
+        Scalar x = xd * major_axis(0)  + yd * major_axis(1)  + zd * major_axis(2);
         Scalar y = xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2);
-        Scalar z = xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2);
+        Scalar z = xd * minor_axis(0)  + yd * minor_axis(1)  + zd * minor_axis(2);
 
         if (x <= obb_min_pointx)
           obb_min_pointx = x;
@@ -1226,9 +1226,9 @@ updateCentroidAndOBB (const pcl::PointCloud<PointT> &cloud,
 
         Scalar xd = point.x - centroid[0], yd = point.y - centroid[1], zd = point.z - centroid[2];
 
-        Scalar x = xd * major_axis(0) + yd * major_axis(1) + zd * major_axis(2);
+        Scalar x = xd * major_axis(0)  + yd * major_axis(1)  + zd * major_axis(2);
         Scalar y = xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2);
-        Scalar z = xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2);
+        Scalar z = xd * minor_axis(0)  + yd * minor_axis(1)  + zd * minor_axis(2);
 
         if (x <= obb_min_pointx)
           obb_min_pointx = x;

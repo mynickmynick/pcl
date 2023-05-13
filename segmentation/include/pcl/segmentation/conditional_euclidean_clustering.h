@@ -235,7 +235,8 @@ namespace pcl
       segment_ByConvexHull(IndicesClusters& clusters);
 
       void
-      segment_ByOBB(IndicesClusters& clusters);
+      segment_ByOBB(IndicesClusters& clusters,
+        size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr);
       void
       segment_ByOBBMT(IndicesClusters& clusters, const size_t threadNumber=2);
 

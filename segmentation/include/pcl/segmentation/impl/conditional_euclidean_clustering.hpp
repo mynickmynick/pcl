@@ -378,8 +378,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesC
 }
 
 template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters &clusters)
+pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters &clusters,
+  size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr)
 {
+  if (!OBB_UpdatePeriod_SamplesNr)
+    OBB_UpdatePeriod_SamplesNr = 1;
+
   bool condition = true, conditionDisabled=(!condition_function_);
   // Prepare output (going to use push_back)
   clusters.clear ();
@@ -468,9 +472,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
         if (condition)
         {
 
-          if(cloud_cluster.back()->size()>50)//40
+          if(cloud_cluster.back()->size()>OBB_UpdatePeriod_SamplesNr*OBB_CalculationStart_UpdatePeriodNr)//50
           {
-            if (cloud_cluster.back()->size() % 25 == 1)//this period must be a submultiple of the previous period //20
+            if (cloud_cluster.back()->size() % OBB_UpdatePeriod_SamplesNr == 1)//this period must be a submultiple of the previous period //25
             {
               Eigen::Matrix<float, 3, 1> temp_centroid=centroid;
               Eigen::Matrix<float, 3, 3> temp_covariance_matrix=covariance_matrix;
