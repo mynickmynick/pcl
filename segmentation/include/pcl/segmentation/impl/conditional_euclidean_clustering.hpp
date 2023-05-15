@@ -601,6 +601,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
 )
 {
+  std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
   {
       std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -724,7 +725,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     
 
       {
-        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        //const std::lock_guard<std::mutex> lock(clusters_mutex);
         clusterRecords[local_current_cluster_index]=pi;
       }
       {
@@ -737,6 +738,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
 
   }
+
+      {
+        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        for (auto& c : clusterRecords)
+          clusterRecordsGlob[c.first] = c.second;
+      }
 }
 
 
@@ -752,6 +759,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
 )
 //this is based on a total separation of indexes in write mode between the threads
 {
+  std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
   {
       std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -873,7 +881,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
     
 
       {
-        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        //const std::lock_guard<std::mutex> lock(clusters_mutex);
         clusterRecords[local_current_cluster_index]=pi;
       }
       {
@@ -886,6 +894,11 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
 
 
   }
+      {
+        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        for (auto& c : clusterRecords)
+          clusterRecordsGlob[c.first] = c.second;
+      }
 }
 
 
@@ -897,6 +910,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
   clusters.clear ();
   std::mutex clusters_mutex;
   current_cluster_index = 0;
+
+  clusterRecordsGlob.clear();
+
 
   SearcherPtr searcher_;
   // Initialize the search class
@@ -973,9 +989,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     size_t ss = 0;
     for (auto& c : p)
     {
-      if (clusterRecords.count(c))
+      if (clusterRecordsGlob.count(c))
       {
-        ss += clusterRecords[c]->indices.size();
+        ss += clusterRecordsGlob[c]->indices.size();
       }
     }
     if (
@@ -991,10 +1007,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
         for (auto& c : p)
         {
 
-          if (clusterRecords.count(c))
+          if (clusterRecordsGlob.count(c))
           {
-            pii=std::copy(clusterRecords[c]->indices.begin(), clusterRecords[c]->indices.end(), pii);
-            clusterRecords.erase(c);
+            pii=std::copy(clusterRecordsGlob[c]->indices.begin(), clusterRecordsGlob[c]->indices.end(), pii);
+            clusterRecordsGlob.erase(c);
           }
 
         }
@@ -1002,7 +1018,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     }
 
   }
-  for (auto& c : clusterRecords)
+  for (auto& c : clusterRecordsGlob)
   {
     if (
       static_cast<int> (c.second->indices.size()) >= min_cluster_size_ &&
@@ -1036,6 +1052,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
 
 )
 {
+  std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   std::vector<PointCloudPtr> local_cloud_cluster;
   bool condition = true, conditionDisabled=(!condition_function_);
 
@@ -1312,11 +1329,14 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
       {
 
         {
-          const std::lock_guard<std::mutex> lock(clusters_mutex);
+          
           if (record_connections)
             clusterRecords[local_current_cluster_index] = pi;
           else
-              clusters.push_back (*pi);
+          {
+            const std::lock_guard<std::mutex> lock(clusters_mutex);
+            clusters.push_back(*pi);
+          }
         }
         {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -1329,6 +1349,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
 
 
   }
+  if (record_connections)
+      {
+        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        for (auto& c : clusterRecords)
+          clusterRecordsGlob[c.first] = c.second;
+      }
 }
 
 
@@ -1340,6 +1366,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
   // Prepare output (going to use push_back)
   clusters.clear ();
+  clusterRecordsGlob.clear();
   std::mutex clusters_mutex;
   current_cluster_index = 0;
 
@@ -1421,9 +1448,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
     size_t ss = 0;
     for (auto& c : p)
     {
-      if (clusterRecords.count(c))
+      if (clusterRecordsGlob.count(c))
       {
-        ss += clusterRecords[c]->indices.size();
+        ss += clusterRecordsGlob[c]->indices.size();
       }
     }
     if (
@@ -1439,10 +1466,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
         for (auto& c : p)
         {
 
-          if (clusterRecords.count(c))
+          if (clusterRecordsGlob.count(c))
           {
-            pii=std::copy(clusterRecords[c]->indices.begin(), clusterRecords[c]->indices.end(), pii);
-            clusterRecords.erase(c);
+            pii=std::copy(clusterRecordsGlob[c]->indices.begin(), clusterRecordsGlob[c]->indices.end(), pii);
+            clusterRecordsGlob.erase(c);
           }
 
         }
@@ -1450,7 +1477,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
     }
 
   }
-  for (auto& c : clusterRecords)
+  for (auto& c : clusterRecordsGlob)
   {
     if (
       static_cast<int> (c.second->indices.size()) >= min_cluster_size_ &&

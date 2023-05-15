@@ -354,7 +354,7 @@ namespace pcl
       size_t max_cluster_index = 1;//[1..]
       //end of critical section
 
-      std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
+      std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecordsGlob;
 
       void
         segmentThreadOld(
