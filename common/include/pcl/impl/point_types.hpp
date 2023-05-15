@@ -37,7 +37,7 @@
  */
 
 #pragma once
-
+#define REAL double
 #include <pcl/memory.h>                 // for PCL_MAKE_ALIGNED_OPERATOR_NEW
 #include <pcl/pcl_macros.h>             // for PCL_EXPORTS
 #include <pcl/PCLPointField.h>          // for PCLPointField
@@ -219,16 +219,16 @@ namespace pcl
     }
   }
   
-  using Vector2fMap = Eigen::Map<Eigen::Vector2f>;
-  using Vector2fMapConst = const Eigen::Map<const Eigen::Vector2f>;
-  using Array3fMap = Eigen::Map<Eigen::Array3f>;
-  using Array3fMapConst = const Eigen::Map<const Eigen::Array3f>;
-  using Array4fMap = Eigen::Map<Eigen::Array4f, Eigen::Aligned>;
-  using Array4fMapConst = const Eigen::Map<const Eigen::Array4f, Eigen::Aligned>;
-  using Vector3fMap = Eigen::Map<Eigen::Vector3f>;
-  using Vector3fMapConst = const Eigen::Map<const Eigen::Vector3f>;
-  using Vector4fMap = Eigen::Map<Eigen::Vector4f, Eigen::Aligned>;
-  using Vector4fMapConst = const Eigen::Map<const Eigen::Vector4f, Eigen::Aligned>;
+  using Vector2fMap = Eigen::Map<Eigen::Vector2d>;
+  using Vector2fMapConst = const Eigen::Map<const Eigen::Vector2d>;
+  using Array3fMap = Eigen::Map<Eigen::Array3d>;
+  using Array3fMapConst = const Eigen::Map<const Eigen::Array3d>;
+  using Array4fMap = Eigen::Map<Eigen::Array4d, Eigen::Aligned>;
+  using Array4fMapConst = const Eigen::Map<const Eigen::Array4d, Eigen::Aligned>;
+  using Vector3fMap = Eigen::Map<Eigen::Vector3d>;
+  using Vector3fMapConst = const Eigen::Map<const Eigen::Vector3d>;
+  using Vector4fMap = Eigen::Map<Eigen::Vector4d, Eigen::Aligned>;
+  using Vector4fMapConst = const Eigen::Map<const Eigen::Vector4d, Eigen::Aligned>;
 
   using Vector3c = Eigen::Matrix<std::uint8_t, 3, 1>;
   using Vector3cMap = Eigen::Map<Vector3c>;
@@ -239,11 +239,11 @@ namespace pcl
 
 #define PCL_ADD_UNION_POINT4D \
   union EIGEN_ALIGN16 { \
-    float data[4]; \
+    REAL data[4]; \
     struct { \
-      float x; \
-      float y; \
-      float z; \
+      REAL x; \
+      REAL y; \
+      REAL z; \
     }; \
   };
 
@@ -265,12 +265,12 @@ namespace pcl
 
 #define PCL_ADD_UNION_NORMAL4D \
   union EIGEN_ALIGN16 { \
-    float data_n[4]; \
-    float normal[3]; \
+    REAL data_n[4]; \
+    REAL normal[3]; \
     struct { \
-      float normal_x; \
-      float normal_y; \
-      float normal_z; \
+      REAL normal_x; \
+      REAL normal_y; \
+      REAL normal_z; \
     }; \
   };
 
@@ -488,7 +488,7 @@ namespace pcl
 
     inline constexpr PointXYZI (float _intensity = 0.f) : PointXYZI(0.f, 0.f, 0.f, _intensity) {}
 
-    inline constexpr PointXYZI (float _x, float _y, float _z, float _intensity = 0.f) : _PointXYZI{{{_x, _y, _z, 1.0f}}, {{_intensity}}} {}
+    inline constexpr PointXYZI (REAL _x, REAL _y, REAL _z, float _intensity = 0.f) : _PointXYZI{{{_x, _y, _z, 1.0f}}, {{_intensity}}} {}
     
     friend std::ostream& operator << (std::ostream& os, const PointXYZI& p);
   };
@@ -508,7 +508,7 @@ namespace pcl
 
     inline constexpr PointXYZL (std::uint32_t _label = 0) : PointXYZL(0.f, 0.f, 0.f, _label) {}
 
-    inline constexpr PointXYZL (float _x, float _y, float _z, std::uint32_t _label = 0) : _PointXYZL{{{_x, _y, _z, 1.0f}}, _label} {}
+    inline constexpr PointXYZL (REAL _x, REAL _y, REAL _z, std::uint32_t _label = 0) : _PointXYZL{{{_x, _y, _z, 1.0f}}, _label} {}
 
     friend std::ostream& operator << (std::ostream& os, const PointXYZL& p);
   };
@@ -527,7 +527,7 @@ namespace pcl
 
   struct EIGEN_ALIGN16 _PointXYZRGBA
   {
-    PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is float[4])
+    PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is REAL[4])
     PCL_ADD_RGB;
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -562,10 +562,10 @@ namespace pcl
     inline constexpr PointXYZRGBA (std::uint8_t _r, std::uint8_t _g, std::uint8_t _b, std::uint8_t _a):
       PointXYZRGBA (0.f, 0.f, 0.f, _r, _g, _b, _a) {}
 
-    inline constexpr PointXYZRGBA (float _x, float _y, float _z):
+    inline constexpr PointXYZRGBA (REAL _x, REAL _y, REAL _z):
       PointXYZRGBA (_x, _y, _z, 0, 0, 0, 255) {}
 
-    inline constexpr PointXYZRGBA (float _x, float _y, float _z, std::uint8_t _r,
+    inline constexpr PointXYZRGBA (REAL _x, REAL _y, REAL _z, std::uint8_t _r,
                          std::uint8_t _g, std::uint8_t _b, std::uint8_t _a) : _PointXYZRGBA{{{_x, _y, _z, 1.0f}}, {{{_b, _g, _r, _a}}}} {}
 
     friend std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p);
@@ -574,14 +574,14 @@ namespace pcl
 
   struct EIGEN_ALIGN16 _PointXYZRGB
   {
-    PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is float[4])
+    PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is REAL[4])
     PCL_ADD_RGB;
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   struct EIGEN_ALIGN16 _PointXYZRGBL
   {
-    PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is float[4])
+    PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is REAL[4])
     PCL_ADD_RGB;
     std::uint32_t label;
     PCL_MAKE_ALIGNED_OPERATOR_NEW
@@ -628,10 +628,10 @@ namespace pcl
     inline constexpr PointXYZRGB (std::uint8_t _r, std::uint8_t _g, std::uint8_t _b):
       PointXYZRGB (0.f, 0.f, 0.f, _r, _g, _b) {}
 
-    inline constexpr PointXYZRGB (float _x, float _y, float _z):
+    inline constexpr PointXYZRGB (REAL _x, REAL _y, REAL _z):
       PointXYZRGB (_x, _y, _z, 0, 0, 0) {}
 
-    inline constexpr PointXYZRGB (float _x, float _y, float _z,
+    inline constexpr PointXYZRGB (REAL _x, REAL _y, REAL _z,
                          std::uint8_t _r, std::uint8_t _g, std::uint8_t _b):
       _PointXYZRGB{{{_x, _y, _z, 1.0f}}, {{{_b, _g, _r, 255}}}} {}
 
@@ -651,10 +651,10 @@ namespace pcl
     inline constexpr PointXYZRGBL (std::uint8_t _r, std::uint8_t _g, std::uint8_t _b):
       PointXYZRGBL (0.f, 0.f, 0.f, _r, _g, _b) {}
 
-    inline constexpr PointXYZRGBL (float _x, float _y, float _z):
+    inline constexpr PointXYZRGBL (REAL _x, REAL _y, REAL _z):
       PointXYZRGBL (_x, _y, _z, 0, 0, 0) {}
 
-    inline constexpr PointXYZRGBL (float _x, float _y, float _z,
+    inline constexpr PointXYZRGBL (REAL _x, REAL _y, REAL _z,
                          std::uint8_t _r, std::uint8_t _g, std::uint8_t _b,
                          std::uint32_t _label = 0, std::uint8_t _a = 255) :
       _PointXYZRGBL{{{_x, _y, _z, 1.0f}}, {{{_b, _g, _r, _a}}}, _label} {}
@@ -671,11 +671,11 @@ namespace pcl
     {
       struct
       {
-        float L;
-        float a;
-        float b;
+        REAL L;
+        REAL a;
+        REAL b;
       };
-      float data_lab[4];
+      REAL data_lab[4];
     };
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -690,7 +690,7 @@ namespace pcl
 
     inline constexpr PointXYZLAB() : PointXYZLAB{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f} {}
 
-    inline constexpr PointXYZLAB (float _x, float _y, float _z,
+    inline constexpr PointXYZLAB (REAL _x, REAL _y, REAL _z,
                         float _L, float _a, float _b) :
       _PointXYZLAB{ {{_x, _y, _z, 1.0f}}, {{_L, _a, _b}} } {}
 
@@ -706,11 +706,11 @@ namespace pcl
     {
       struct
       {
-        float h;
-        float s;
-        float v;
+        REAL h;
+        REAL s;
+        REAL v;
       };
-      float data_c[4];
+      REAL data_c[4];
     };
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -728,7 +728,7 @@ namespace pcl
     inline constexpr PointXYZHSV (float _h, float _s, float _v):
       PointXYZHSV (0.f, 0.f, 0.f, _h, _s, _v) {}
 
-    inline constexpr PointXYZHSV (float _x, float _y, float _z,
+    inline constexpr PointXYZHSV (REAL _x, REAL _y, REAL _z,
                         float _h, float _s, float _v) :
       _PointXYZHSV{{{_x, _y, _z, 1.0f}}, {{_h, _s, _v}}} {}
 
@@ -744,15 +744,15 @@ namespace pcl
   {
     union 
     { 
-      float data[2]; 
+      REAL data[2]; 
       struct 
       { 
-        float x; 
-        float y; 
+        REAL x; 
+        REAL y; 
       };
     };
 
-    inline constexpr PointXY(float _x, float _y): x(_x), y(_y) {}
+    inline constexpr PointXY(REAL _x, REAL _y): x(_x), y(_y) {}
     inline constexpr PointXY(): x(0.0f), y(0.0f) {}
     
     inline pcl::Vector2fMap getVector2fMap () { return (pcl::Vector2fMap (data)); }
@@ -768,12 +768,12 @@ namespace pcl
     */
   struct PointUV
   {
-    float u = 0.f;
-    float v = 0.f;
+    REAL u = 0.f;
+    REAL v = 0.f;
 
     inline constexpr PointUV() = default;
 
-    inline constexpr PointUV(float _u, float _v): u(_u), v(_v) {}
+    inline constexpr PointUV(REAL _u, REAL _v): u(_u), v(_v) {}
 
     friend std::ostream& operator << (std::ostream& os, const PointUV& p);
   };
@@ -790,9 +790,9 @@ namespace pcl
     {
       struct
       {
-        float strength;
+        REAL strength;
       };
-      float data_c[4];
+      REAL data_c[4];
     };
     PCL_MAKE_ALIGNED_OPERATOR_NEW
 
