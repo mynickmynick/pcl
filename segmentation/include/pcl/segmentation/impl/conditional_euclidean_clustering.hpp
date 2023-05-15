@@ -619,9 +619,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     auto iindex = (*indices_)[i];
 
     // Set up a new growing cluster
-    pcl::PointIndices pi;
-    pi.header = input_->header;
-    Indices & current_cluster=pi.indices;
+    shared_ptr<pcl::PointIndices> pi=make_shared<pcl::PointIndices>();
+    pi->header = input_->header;
+    Indices & current_cluster=pi->indices;
     int cii = 0;  // cii = cluster indices iterator
 
     size_t processed_ = 0;
@@ -776,9 +776,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
     auto iindex = (*indices_)[i];
 
     // Set up a new growing cluster
-    pcl::PointIndices pi;
-    pi.header = input_->header;
-    Indices & current_cluster=pi.indices;
+    shared_ptr<pcl::PointIndices> pi=make_shared<pcl::PointIndices>();
+    pi->header = input_->header;
+    Indices & current_cluster=pi->indices;
     int cii = 0;  // cii = cluster indices iterator
 
     size_t processed_ = 0;
@@ -975,7 +975,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     {
       if (clusterRecords.count(c))
       {
-        ss += clusterRecords[c].indices.size();
+        ss += clusterRecords[c]->indices.size();
       }
     }
     if (
@@ -993,7 +993,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
           if (clusterRecords.count(c))
           {
-            pii=std::copy(clusterRecords[c].indices.begin(), clusterRecords[c].indices.end(), pii);
+            pii=std::copy(clusterRecords[c]->indices.begin(), clusterRecords[c]->indices.end(), pii);
             clusterRecords.erase(c);
           }
 
@@ -1005,14 +1005,14 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
   for (auto& c : clusterRecords)
   {
     if (
-      static_cast<int> (c.second.indices.size()) >= min_cluster_size_ &&
-      static_cast<int> (c.second.indices.size()) <= max_cluster_size_)
+      static_cast<int> (c.second->indices.size()) >= min_cluster_size_ &&
+      static_cast<int> (c.second->indices.size()) <= max_cluster_size_)
     {
       pcl::PointIndices pi;
       pi.header = input_->header;
-      pi.indices.resize (c.second.indices.size());
+      pi.indices.resize (c.second->indices.size());
 
-      std::copy(c.second.indices.begin(), c.second.indices.end(), pi.indices.begin());
+      std::copy(c.second->indices.begin(), c.second->indices.end(), pi.indices.begin());
       clusters.push_back (pi);
     }
   }
@@ -1069,9 +1069,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
       continue;
 
     // Set up a new growing cluster
-    pcl::PointIndices pi;
-    pi.header = input_->header;
-    Indices & current_cluster=pi.indices;
+    shared_ptr<pcl::PointIndices> pi=make_shared<pcl::PointIndices>();
+    pi->header = input_->header;
+    Indices & current_cluster=pi->indices;
     int cii = 0;  // cii = cluster indices iterator
 
     // Add the FIRST point to the cluster
@@ -1316,7 +1316,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
           if (record_connections)
             clusterRecords[local_current_cluster_index] = pi;
           else
-              clusters.push_back (pi);
+              clusters.push_back (*pi);
         }
         {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -1423,7 +1423,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
     {
       if (clusterRecords.count(c))
       {
-        ss += clusterRecords[c].indices.size();
+        ss += clusterRecords[c]->indices.size();
       }
     }
     if (
@@ -1441,7 +1441,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
           if (clusterRecords.count(c))
           {
-            pii=std::copy(clusterRecords[c].indices.begin(), clusterRecords[c].indices.end(), pii);
+            pii=std::copy(clusterRecords[c]->indices.begin(), clusterRecords[c]->indices.end(), pii);
             clusterRecords.erase(c);
           }
 
@@ -1453,14 +1453,14 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
   for (auto& c : clusterRecords)
   {
     if (
-      static_cast<int> (c.second.indices.size()) >= min_cluster_size_ &&
-      static_cast<int> (c.second.indices.size()) <= max_cluster_size_)
+      static_cast<int> (c.second->indices.size()) >= min_cluster_size_ &&
+      static_cast<int> (c.second->indices.size()) <= max_cluster_size_)
     {
       pcl::PointIndices pi;
       pi.header = input_->header;
-      pi.indices.resize (c.second.indices.size());
+      pi.indices.resize (c.second->indices.size());
 
-      std::copy(c.second.indices.begin(), c.second.indices.end(), pi.indices.begin());
+      std::copy(c.second->indices.begin(), c.second->indices.end(), pi.indices.begin());
       clusters.push_back (pi);
     }
   }
