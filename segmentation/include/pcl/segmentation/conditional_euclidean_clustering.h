@@ -46,11 +46,36 @@
 #include <pcl/search/search.h> // for Search
 #include <shared_mutex>
 #include <set>
+#include <unordered_set>
 #include <map>
 
 #include <functional>
 //#include <vector>
+namespace pcl {
+  class PairS {
+  public:
+    size_t first;
+    size_t second;
+    bool operator==(const PairS& other) const {
+      return (other.first == first && other.second == second)
+        || (other.first == second && other.second == first);
+    };
 
+  };
+}
+
+namespace std
+{
+  template<>
+  struct hash<pcl::PairS>
+  {
+    size_t
+      operator()(const pcl::PairS& obj) const
+    {
+      return hash<size_t>()(obj.first + obj.second);
+    }
+  };
+}
 
 namespace pcl
 {
@@ -297,14 +322,48 @@ namespace pcl
 
       float UnflatnessThreshold=0.25;
 
-      // start of critical section
+
+
+      /*
+        struct PairHasher
+        {
+          
+          size_t operator()(const Pair & obj) const
+          {
+            return std::hash<size_t>()(obj.first+obj.second);
+          }
+        };
+      namespace std
+      {
+        template<>
+          struct hash<PairS>
+          {
+            size_t
+            operator()(const PairS & obj) const
+            {
+              return hash<size_t>()(obj.first+obj.second);
+            }
+          };
+      }*/
+
+
+     // start of critical section
       std::shared_mutex connections_mutex;
-      std::set<std::pair<size_t, size_t>> connections;
+      std::unordered_set<PairS> connections;
       size_t current_cluster_index = 1;//[1..]
       size_t max_cluster_index = 1;//[1..]
       //end of critical section
 
       std::map<size_t, pcl::PointIndices> clusterRecords;
+
+      void
+        segmentThreadOld(
+          SearcherPtr& searcher_,
+          std::mutex& clusters_mutex,
+          std::vector<size_t>& processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          size_t i0, size_t i1
+        );
 
       void
         segmentThread(
