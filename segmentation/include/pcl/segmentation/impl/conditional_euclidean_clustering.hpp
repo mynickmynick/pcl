@@ -635,10 +635,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
         continue;
 
       // Add the FIRST point to the cluster
-      current_cluster.push_back (iindex);
       processed[iindex] = local_current_cluster_index;
-
     }
+    current_cluster.push_back (iindex);
 
     // Process the current cluster (it can be growing in size as it is being processed)
     while (cii < static_cast<int> (current_cluster.size ()))
@@ -945,7 +944,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     if (t == threadNumber - 1)
       i1 = indices_->size();
 
-    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThread,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
+    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
       std::ref(searcher_),
       std::ref(clusters_mutex),
       std::ref(processed),
