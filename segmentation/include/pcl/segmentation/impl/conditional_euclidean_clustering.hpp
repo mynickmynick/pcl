@@ -730,6 +730,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
       }
       {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
+          if (local_current_cluster_index> max_cluster_index)
+            max_cluster_index = local_current_cluster_index;
           local_current_cluster_index=++current_cluster_index;
       }
     
@@ -738,7 +740,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   }
 
       {
-        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        //const std::lock_guard<std::mutex> lock(clusters_mutex);
         for (auto& c : clusterRecords)
           clusterRecordsGlob[c.first] = c.second;
       }
@@ -884,6 +886,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
       }
       {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
+          if (local_current_cluster_index> max_cluster_index)
+            max_cluster_index = local_current_cluster_index;
           local_current_cluster_index=++current_cluster_index;
       }
     
@@ -891,7 +895,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
 
   }
       {
-        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        //const std::lock_guard<std::mutex> lock(clusters_mutex);
         for (auto& c : clusterRecords)
           clusterRecordsGlob[c.first] = c.second;
       }
@@ -908,6 +912,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
   current_cluster_index = 0;
 
   clusterRecordsGlob.clear();
+  clusterRecordsGlob.resize(input_->size());
+  for (auto& c : clusterRecordsGlob) c.reset();
 
 
   SearcherPtr searcher_;
@@ -939,7 +945,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     if (t == threadNumber - 1)
       i1 = indices_->size();
 
-    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
+    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThread,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
       std::ref(searcher_),
       std::ref(clusters_mutex),
       std::ref(processed),
@@ -985,7 +991,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     size_t ss = 0;
     for (auto& c : p)
     {
-      if (clusterRecordsGlob.count(c))
+      if (clusterRecordsGlob[c])
       {
         ss += clusterRecordsGlob[c]->indices.size();
       }
@@ -1003,28 +1009,35 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
         for (auto& c : p)
         {
 
-          if (clusterRecordsGlob.count(c))
+          if (clusterRecordsGlob[c])
           {
             pii=std::copy(clusterRecordsGlob[c]->indices.begin(), clusterRecordsGlob[c]->indices.end(), pii);
-            clusterRecordsGlob.erase(c);
+            clusterRecordsGlob[c].reset();
           }
 
         }
         clusters.push_back (pi);
     }
+    else
+      for (auto& c : p)
+          clusterRecordsGlob[c].reset();
+
 
   }
-  for (auto& c : clusterRecordsGlob)
+  //for (auto& c : clusterRecordsGlob)
+  for (size_t i=0;i<max_cluster_index;++i)
   {
+    auto c = clusterRecordsGlob[i];
+    if(c)
     if (
-      static_cast<int> (c.second->indices.size()) >= min_cluster_size_ &&
-      static_cast<int> (c.second->indices.size()) <= max_cluster_size_)
+      static_cast<int> (c->indices.size()) >= min_cluster_size_ &&
+      static_cast<int> (c->indices.size()) <= max_cluster_size_)
     {
       pcl::PointIndices pi;
       pi.header = input_->header;
-      pi.indices.resize (c.second->indices.size());
+      pi.indices.resize (c->indices.size());
 
-      std::copy(c.second->indices.begin(), c.second->indices.end(), pi.indices.begin());
+      std::copy(c->indices.begin(), c->indices.end(), pi.indices.begin());
       clusters.push_back (pi);
     }
   }
@@ -1336,6 +1349,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
         }
         {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
+          if (local_current_cluster_index> max_cluster_index)
+            max_cluster_index = local_current_cluster_index;
           local_current_cluster_index = ++current_cluster_index;
         }
 
@@ -1345,7 +1360,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
   }
   if (record_connections)
       {
-        const std::lock_guard<std::mutex> lock(clusters_mutex);
+        //const std::lock_guard<std::mutex> lock(clusters_mutex);
         for (auto& c : clusterRecords)
           clusterRecordsGlob[c.first] = c.second;
       }
@@ -1361,6 +1376,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
   // Prepare output (going to use push_back)
   clusters.clear ();
   clusterRecordsGlob.clear();
+  clusterRecordsGlob.resize(input_->size());
+  for (auto& c : clusterRecordsGlob) c.reset();
   std::mutex clusters_mutex;
   current_cluster_index = 0;
 
@@ -1442,7 +1459,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
     size_t ss = 0;
     for (auto& c : p)
     {
-      if (clusterRecordsGlob.count(c))
+      if (clusterRecordsGlob[c])
       {
         ss += clusterRecordsGlob[c]->indices.size();
       }
@@ -1460,28 +1477,33 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
         for (auto& c : p)
         {
 
-          if (clusterRecordsGlob.count(c))
+          if (clusterRecordsGlob[c])
           {
             pii=std::copy(clusterRecordsGlob[c]->indices.begin(), clusterRecordsGlob[c]->indices.end(), pii);
-            clusterRecordsGlob.erase(c);
+            clusterRecordsGlob[c].reset();
           }
 
         }
         clusters.push_back (pi);
     }
-
+    else
+      for (auto& c : p)
+        clusterRecordsGlob[c].reset();
   }
-  for (auto& c : clusterRecordsGlob)
+  //for (auto& c : clusterRecordsGlob)
+  for (size_t i=0;i<max_cluster_index;++i)
   {
+    auto c = clusterRecordsGlob[i];
+    if(c)
     if (
-      static_cast<int> (c.second->indices.size()) >= min_cluster_size_ &&
-      static_cast<int> (c.second->indices.size()) <= max_cluster_size_)
+      static_cast<int> (c->indices.size()) >= min_cluster_size_ &&
+      static_cast<int> (c->indices.size()) <= max_cluster_size_)
     {
       pcl::PointIndices pi;
       pi.header = input_->header;
-      pi.indices.resize (c.second->indices.size());
+      pi.indices.resize (c->indices.size());
 
-      std::copy(c.second->indices.begin(), c.second->indices.end(), pi.indices.begin());
+      std::copy(c->indices.begin(), c->indices.end(), pi.indices.begin());
       clusters.push_back (pi);
     }
   }

@@ -351,10 +351,11 @@ namespace pcl
       std::shared_mutex connections_mutex;
       std::unordered_set<PairS> connections;
       size_t current_cluster_index = 1;//[1..]
+      size_t max_cluster_index = 1;//[1..]
 
       //end of critical section
 
-      std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecordsGlob;
+      std::vector<shared_ptr<pcl::PointIndices>> clusterRecordsGlob;
 
       void
         segmentThreadOld(
