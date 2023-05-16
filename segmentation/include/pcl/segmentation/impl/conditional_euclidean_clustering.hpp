@@ -957,26 +957,37 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
   for (size_t t = 0; t < threadNumber; ++t)
     ThPool[t].join();
-
+  
   std::vector<std::set<size_t>> partition;//only partial partitions cause it doesn't include singletons
   for (auto& conn : connections)
   {
     bool found = false;
-    for (auto& s : partition)
+    std::vector<size_t> lastFound;
+    for (size_t i= 0;i<partition.size();++i)
     {
-      if (s.count(conn.first))
+     
+      if ( partition[i].count(conn.first))
       {
         found = true;
-        s.insert(conn.second);
-        break;
+        partition[i].insert(conn.second);
+        lastFound.push_back(i);
+        continue;
       }
-      if (s.count(conn.second))
+      if ( partition[i].count(conn.second))
       {
         found = true;
-        s.insert(conn.first);
-        break;
+        partition[i].insert(conn.first);
+        lastFound.push_back(i);
+        continue;
       }
     }
+    while (lastFound.size()>1)
+    {
+      partition[lastFound[lastFound.size()-2]].merge(partition[lastFound[lastFound.size()-1]]);
+      partition[lastFound[lastFound.size() - 1]].clear();
+      lastFound.pop_back();
+    }
+
     if (!found)
     {
       std::set<size_t> s;
@@ -986,6 +997,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     }
   }
   for (auto & p: partition)
+    if (p.size())
   {
     size_t ss = 0;
     for (auto& c : p)
