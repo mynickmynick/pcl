@@ -601,7 +601,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
 )
 {
-  std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
+  //std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
   {
       std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -725,7 +725,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
       {
         //const std::lock_guard<std::mutex> lock(clusters_mutex);
-        clusterRecords[local_current_cluster_index]=pi;
+        clusterRecordsGlob[local_current_cluster_index]=pi;
       }
       {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -740,8 +740,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
       {
         //const std::lock_guard<std::mutex> lock(clusters_mutex);
-        for (auto& c : clusterRecords)
-          clusterRecordsGlob[c.first] = c.second;
+        //for (auto& c : clusterRecords)
+        //  clusterRecordsGlob[c.first] = c.second;
       }
 }
 
@@ -758,7 +758,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
 )
 //this is based on a total separation of indexes in write mode between the threads
 {
-  std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
+  //std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
   {
       std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -881,7 +881,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
 
       {
         //const std::lock_guard<std::mutex> lock(clusters_mutex);
-        clusterRecords[local_current_cluster_index]=pi;
+        clusterRecordsGlob[local_current_cluster_index]=pi;
       }
       {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -895,8 +895,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
   }
       {
         //const std::lock_guard<std::mutex> lock(clusters_mutex);
-        for (auto& c : clusterRecords)
-          clusterRecordsGlob[c.first] = c.second;
+        //for (auto& c : clusterRecords)
+        //  clusterRecordsGlob[c.first] = c.second;
       }
 }
 
