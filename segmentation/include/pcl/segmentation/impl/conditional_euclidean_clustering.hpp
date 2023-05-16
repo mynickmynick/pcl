@@ -730,8 +730,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
       }
       {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
-          if (local_current_cluster_index> max_cluster_index)
-            max_cluster_index = local_current_cluster_index;
           local_current_cluster_index=++current_cluster_index;
       }
     
@@ -886,8 +884,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
       }
       {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
-          if (local_current_cluster_index> max_cluster_index)
-            max_cluster_index = local_current_cluster_index;
           local_current_cluster_index=++current_cluster_index;
       }
     
@@ -1340,8 +1336,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
         }
         {
           std::unique_lock<std::shared_mutex> ul(connections_mutex);
-          if (local_current_cluster_index > max_cluster_index)
-            max_cluster_index = local_current_cluster_index;
           local_current_cluster_index = ++current_cluster_index;
         }
 
