@@ -615,8 +615,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   std::vector<float> nn_distances;
 
   // Process all points indexed by indices_
-  for(size_t i=i0;i<i1;++i)
+  // the following map may seem weird but it is more fair in distribution of work load because the algorithm proceeds by connection both bacward and forward on indexes
+  for(size_t j=i0;j<i1;++j)
   {
+    size_t i = j + (i1 - i0) / 2;
+    if (i >= i1)
+      i = i0 + (i - i1);
     auto iindex = (*indices_)[i];
 
     // Set up a new growing cluster
@@ -923,6 +927,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
       searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
     else
       searcher_.reset (new pcl::search::KdTree<PointT> ());
+      //searcher_.reset (new pcl::search::FlannSearch<PointT> ());
   }
   searcher_->setInputCloud (input_, indices_);
 
