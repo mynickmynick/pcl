@@ -639,9 +639,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   //std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
 
-  //std::unordered_set<PairS> local_connections;
-
-
   // Temp variables used by search class
   Indices nn_indices;
   std::vector<float> nn_distances;
@@ -654,6 +651,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     if (i >= i1)
       i = i0 + (i - i1);
     auto iindex = (*indices)[i];
+    {
+      local_current_cluster_index=iindex;//local_current_cluster_index= index of first point added to the cluster
+    }
 
     // Set up a new growing cluster
     shared_ptr<pcl::PointIndices> pi=make_shared<pcl::PointIndices>();
@@ -669,11 +669,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
       // Has this point been processed before?
       if (iindex == UNAVAILABLE || processed_)
         continue;
-
-      {
-        //std::unique_lock<std::shared_mutex> ul(connections_mutex);
-        local_current_cluster_index=iindex;//++current_cluster_index; local_current_cluster_index= index of first point added to the cluster
-      }
 
       // Add the FIRST point to the cluster
       processed[iindex] = local_current_cluster_index;
