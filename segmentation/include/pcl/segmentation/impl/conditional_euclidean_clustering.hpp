@@ -637,7 +637,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   //std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
   {
-      std::unique_lock<std::shared_mutex> ul(connections_mutex);
+      //std::unique_lock<std::shared_mutex> ul(connections_mutex);
       local_current_cluster_index=++current_cluster_index;
   }
 
@@ -664,7 +664,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
     size_t processed_ = 0;
     {
-      std::unique_lock<std::shared_mutex> ulock(processed_mutex[iindex]);
+      //std::unique_lock<std::shared_mutex> ulock(processed_mutex[iindex]);
       processed_ = processed[iindex];
 
       // Has this point been processed before?
@@ -695,7 +695,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
         size_t processed_ = 0;
         {
-          std::shared_lock<std::shared_mutex> slock(processed_mutex[nn_indices[nii]]);
+          //std::shared_lock<std::shared_mutex> slock(processed_mutex[nn_indices[nii]]);
           processed_ = processed[nn_indices[nii]];
         }
 
@@ -714,7 +714,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
             {
               local_connections.insert(p);
               {
-                std::unique_lock<std::shared_mutex> ul(connections_mutex);
+                //std::unique_lock<std::shared_mutex> ul(connections_mutex);
                 connections.insert(p);//the two growing clusters will have to be connected
               }
             }
@@ -724,7 +724,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
           else
           {
               {
-                std::scoped_lock lock(processed_mutex[nn_indices[nii]], connections_mutex);
+                //std::scoped_lock lock(processed_mutex[nn_indices[nii]], connections_mutex);
                 //I have to test it again cause it might have been processed in the meantime
                 processed_ = processed[nn_indices[nii]];
 
@@ -765,7 +765,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
         clusterRecordsGlob[local_current_cluster_index]=pi;
       }
       {
-          std::unique_lock<std::shared_mutex> ul(connections_mutex);
+          //std::unique_lock<std::shared_mutex> ul(connections_mutex);
           if (local_current_cluster_index> max_cluster_index)
             max_cluster_index = local_current_cluster_index;
           local_current_cluster_index=++current_cluster_index;
