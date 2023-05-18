@@ -349,7 +349,7 @@ namespace pcl
 
      // start of critical section
       std::shared_mutex connections_mutex;
-      std::unordered_set<PairS> connections;
+      std::unordered_set<PairS> gconnections;
       size_t current_cluster_index = 1;//[1..]
       size_t max_cluster_index = 1;//[1..]
 
@@ -363,6 +363,7 @@ namespace pcl
           std::mutex& clusters_mutex,
           std::vector<size_t>& processed,
           std::vector<std::shared_mutex> & processed_mutex,
+          std::unordered_set<PairS> & connections,
           size_t i0, size_t i1
         );
 
