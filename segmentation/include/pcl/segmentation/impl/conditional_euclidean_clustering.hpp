@@ -932,7 +932,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 {
   // Prepare output (going to use push_back)
   clusters.clear ();
-  std::mutex clusters_mutex;
+  std::mutex alignas(std::hardware_destructive_interference_size) clusters_mutex;
   current_cluster_index = 0;
 
   clusterRecordsGlob.clear();
@@ -945,12 +945,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
   // Create a bool vector of processed point indices, and initialize it to false
   // Need to have it contain all possible points because radius search can not return indices into indices
-  std::vector<size_t> processed (input_->size (), 0);
-  std::vector<std::shared_mutex> processed_mutex(input_->size ());
+  std::vector<size_t> alignas(std::hardware_destructive_interference_size) processed (input_->size (), 0);
+  std::vector<std::shared_mutex> alignas(std::hardware_destructive_interference_size) processed_mutex(input_->size ());
 
   size_t chunk = indices_->size() / threadNumber;
-  std::vector<std::thread> ThPool;
-  std::shared_ptr<std::unordered_set<PairS>> connections[32];
+  std::vector<std::thread> alignas(std::hardware_destructive_interference_size) ThPool;
+  std::shared_ptr<std::unordered_set<PairS>> alignas(std::hardware_destructive_interference_size) connections[32];
   size_t i0 = 0;
   size_t i1 = chunk;
   for (size_t t = 0; t < threadNumber; ++t)

@@ -355,7 +355,7 @@ namespace pcl
 
       //end of critical section
 
-      std::vector<shared_ptr<pcl::PointIndices>> clusterRecordsGlob;
+      std::vector<shared_ptr<pcl::PointIndices>> alignas(std::hardware_destructive_interference_size) clusterRecordsGlob;
 
       void
         segmentThreadOld(
