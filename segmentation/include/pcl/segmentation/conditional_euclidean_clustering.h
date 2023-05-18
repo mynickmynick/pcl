@@ -359,8 +359,6 @@ namespace pcl
 
       void
         segmentThreadOld(
-          //SearcherPtr& searcher_,
-          std::mutex& clusters_mutex,
           std::vector<size_t>& processed,
           std::vector<std::shared_mutex> & processed_mutex,
           std::unordered_set<PairS> & connections,

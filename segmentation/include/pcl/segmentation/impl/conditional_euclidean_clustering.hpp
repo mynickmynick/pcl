@@ -48,7 +48,6 @@
 
 
 
-
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segment (pcl::IndicesClusters &clusters)
 {
@@ -594,8 +593,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters
 //both processing and memory time
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
-  //SearcherPtr& searcher_,
-    std::mutex & clusters_mutex,
   std::vector<size_t> & processed,
   std::vector<std::shared_mutex> & processed_mutex,
   std::unordered_set<PairS> & connections_out,
@@ -961,7 +958,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     connections[t]->clear();
 
     ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
-      std::ref(clusters_mutex),
       std::ref(processed),
       std::ref(processed_mutex),
       std::ref(*(connections[t])),
@@ -969,6 +965,14 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     )));
     i0 += chunk;
     i1 += chunk;
+/*
+    DWORD_PTR dw = SetThreadAffinityMask(ThPool.back().native_handle(), (DWORD_PTR((3 << (4*t)) ) ));
+    if (dw == 0)
+    {
+      DWORD dwErr = GetLastError();
+      std::cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
+    }
+    */
   }
 
   for (size_t t = 0; t < threadNumber; ++t)
