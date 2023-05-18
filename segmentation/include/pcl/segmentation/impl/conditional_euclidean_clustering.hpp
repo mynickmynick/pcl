@@ -599,7 +599,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   std::vector<size_t> & processed,
   std::vector<std::shared_mutex> & processed_mutex,
   std::unordered_set<PairS> & connections_out,
-  size_t i0, size_t i1
+  size_t i0, size_t i1, size_t threadNumber
 
 )
 {
@@ -638,10 +638,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
   //std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
-  {
-      std::unique_lock<std::shared_mutex> ul(connections_mutex);
-      local_current_cluster_index=++current_cluster_index;
-  }
 
   //std::unordered_set<PairS> local_connections;
 
@@ -673,6 +669,11 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
       // Has this point been processed before?
       if (iindex == UNAVAILABLE || processed_)
         continue;
+
+      {
+        //std::unique_lock<std::shared_mutex> ul(connections_mutex);
+        local_current_cluster_index=iindex;//++current_cluster_index; local_current_cluster_index= index of first point added to the cluster
+      }
 
       // Add the FIRST point to the cluster
       processed[iindex] = local_current_cluster_index;
@@ -752,10 +753,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
         clusterRecordsGlob[local_current_cluster_index]=pi;
       }
       {
-          std::unique_lock<std::shared_mutex> ul(connections_mutex);
-          if (local_current_cluster_index> max_cluster_index)
-            max_cluster_index = local_current_cluster_index;
-          local_current_cluster_index=++current_cluster_index;
+          //std::unique_lock<std::shared_mutex> ul(connections_mutex);
+          //if (local_current_cluster_index> max_cluster_index)
+          //  max_cluster_index = local_current_cluster_index;
+          //local_current_cluster_index=++current_cluster_index;
       }
     
 
@@ -962,7 +963,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
       std::ref(processed),
       std::ref(processed_mutex),
       std::ref(*(connections[t])),
-      i0, i1
+      i0, i1, t
     )));
     i0 += chunk;
     i1 += chunk;
@@ -1049,10 +1050,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
 
   }
-  //for (auto& c : clusterRecordsGlob)
-  for (size_t i=0;i<max_cluster_index;++i)
+  for (auto& c : clusterRecordsGlob)
+  //for (size_t i=0;i<max_cluster_index;++i)
   {
-    auto c = clusterRecordsGlob[i];
+    //auto c = clusterRecordsGlob[i];
     if(c)
     if (
       static_cast<int> (c->indices.size()) >= min_cluster_size_ &&

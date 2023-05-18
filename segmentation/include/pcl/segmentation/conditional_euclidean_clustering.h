@@ -364,7 +364,7 @@ namespace pcl
           std::vector<size_t>& processed,
           std::vector<std::shared_mutex> & processed_mutex,
           std::unordered_set<PairS> & connections,
-          size_t i0, size_t i1
+          size_t i0, size_t i1, size_t threadNumber
         );
 
       void
