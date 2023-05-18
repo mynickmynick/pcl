@@ -603,6 +603,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
 )
 {
+  std::vector<std::pair<size_t,shared_ptr<pcl::PointIndices>>> clusterRecordsLoc;
+  clusterRecordsLoc.clear();
+
   std::unordered_set<PairS> connections;
   shared_ptr<pcl::PointCloud<PointT>> input(new pcl::PointCloud<PointT>);
   shared_ptr<Indices> indices=make_shared<Indices>();
@@ -744,8 +747,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     
 
       {
-        //const std::lock_guard<std::mutex> lock(clusters_mutex);
-        clusterRecordsGlob[local_current_cluster_index]=pi;
+        //clusterRecordsGlob[local_current_cluster_index]=pi;
+      clusterRecordsLoc.push_back( std::make_pair(local_current_cluster_index, pi));
+      
       }
       {
           //std::unique_lock<std::shared_mutex> ul(connections_mutex);
@@ -758,8 +762,11 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
   }
 
+  //concentrated at the end some separate (so unlocked) but contiguous writes that disturb multithreading)
   connections_out.clear();
   connections_out = connections;
+  for (auto& c : clusterRecordsLoc)
+    clusterRecordsGlob[c.first] = c.second;
 
 }
 
