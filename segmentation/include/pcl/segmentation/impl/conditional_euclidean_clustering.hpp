@@ -709,13 +709,13 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
           {
             PairS p;
             p.first = local_current_cluster_index; p.second= processed_;
-            if (!connections.count(p))
+            //if (!connections.count(p)) redundant for sets
               connections.insert(p);
           }
           else
           {
               {
-              std::scoped_lock lock(processed_mutex[nn_indices[nii]]);//, connections_mutex);
+              std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
                 //I have to test it again cause it might have been processed in the meantime
                 processed_ = processed[nn_indices[nii]];
 
@@ -723,7 +723,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
                 {
                   PairS p;
                   p.first = local_current_cluster_index; p.second= processed_;
-                  if (!connections.count(p))
+                  //if (!connections.count(p))
                     connections.insert(p);
                 }
                 else
