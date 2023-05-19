@@ -631,10 +631,11 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     if (input->isOrganized ())
       searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
     else
-      searcher_.reset (new pcl::search::KdTree<PointT> ());
-    //searcher_.reset (new pcl::search::FlannSearch<PointT> ());
+      searcher_.reset(new pcl::search::KdTree<PointT>());
   }
   searcher_->setInputCloud (input, indices);
+
+ // std::cout << "Epsilon " << dynamic_cast<pcl::search::KdTree<PointT>::Ptr> (searcher_)->getEpsilon() << "\n";
 
   //std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   size_t local_current_cluster_index = 1;//[1..]
@@ -679,7 +680,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     while (cii < static_cast<int> (current_cluster.size ()))
     {
       // Search for neighbors around the current seed point of the current cluster
-      if (searcher_->radiusSearch ((*input)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances) < 1)
+      if (searcher_->radiusSearch ((*input)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances,8) < 1)
       {
         cii++;
         continue;
@@ -709,7 +710,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
           {
             PairS p;
             p.first = local_current_cluster_index; p.second= processed_;
-            //if (!connections.count(p)) redundant for sets
               connections.insert(p);
           }
           else
@@ -723,7 +723,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
                 {
                   PairS p;
                   p.first = local_current_cluster_index; p.second= processed_;
-                  //if (!connections.count(p))
+
                     connections.insert(p);
                 }
                 else
@@ -759,7 +759,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
   }
 
-  //concentrated at the end some separate (so unlocked) but contiguous writes that disturb multithreading)
+  //concentrated at the end some separate (so unlocked) but contiguous writes that disturb multithreading
   connections_out.clear();
   connections_out = connections;
   for (auto& c : clusterRecordsLoc)
