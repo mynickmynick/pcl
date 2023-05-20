@@ -1010,7 +1010,7 @@ updateCentroidAndOBB (const pcl::PointCloud<PointT> & cloud,
     {
 #pragma omp parallel for \
   firstprivate(major_axis, middle_axis, minor_axis) \
-  num_threads(omp_get_num_procs())
+  num_threads(12)//omp_get_num_procs())
       //for (const auto& point : cloud)
       for (std::ptrdiff_t i=0;i<cloud.points.size();++i)
       {
@@ -1040,7 +1040,7 @@ updateCentroidAndOBB (const pcl::PointCloud<PointT> & cloud,
     {
 #pragma omp parallel for \
   firstprivate(major_axis, middle_axis, minor_axis) \
-  num_threads(omp_get_num_procs())
+  num_threads(12)//omp_get_num_procs())
       //for (const auto& point : cloud)
       for (std::ptrdiff_t i=0;i<cloud.points.size();++i)
       {
@@ -1192,7 +1192,7 @@ updateCentroidAndOBB (const pcl::PointCloud<PointT> & cloud,
     {
 #pragma omp parallel for \
   firstprivate(major_axis, middle_axis, minor_axis) \
-  num_threads(omp_get_num_procs())
+  num_threads(12)//omp_get_num_procs())
       for (std::ptrdiff_t  i=_oldSize; i<cloud.points.size();++i)
       {
         auto point = cloud.points[i];
@@ -1221,7 +1221,7 @@ updateCentroidAndOBB (const pcl::PointCloud<PointT> & cloud,
     {
 #pragma omp parallel for \
   firstprivate(major_axis, middle_axis, minor_axis) \
-  num_threads(omp_get_num_procs())
+  num_threads(12)//omp_get_num_procs())
       for (std::ptrdiff_t  i=_oldSize; i<cloud.points.size();++i)
       {
         auto point = cloud.points[i];
