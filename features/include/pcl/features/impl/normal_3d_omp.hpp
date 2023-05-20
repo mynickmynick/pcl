@@ -148,11 +148,17 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   std::copy(this->indices_->begin(), this->indices_->end(), indices_->begin());
 
   //PointCloudConstPtr input_=this->input_;
-  //PointCloud input(*input_);
-
+  //const PointCloud input(*input_);
+  pcl::NormalEstimation<PointInT, PointOutT> n;
+  //pcl::PointCloud<PointOutT> normals;
+  n.setInputCloud(input_);
+  n.setKSearch(this->k_);
+  n.indices_ = indices_;
+  n.computeFeature_(output,i0,i1);
+  /*
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
-  if (input.is_dense)
+  if (input_->is_dense)
   {
 
     // Iterating over the entire index vector
@@ -202,6 +208,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
 
     }
   }
+  */
 }
 
 template <typename PointInT, typename PointOutT> void
