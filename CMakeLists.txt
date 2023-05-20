@@ -300,22 +300,8 @@ if(WITH_OPENMP)
   find_package(OpenMP COMPONENTS C CXX)
 endif()
 if(OpenMP_FOUND)
-
-     
-
   string(APPEND CMAKE_C_FLAGS " ${OpenMP_C_FLAGS}")
   string(APPEND CMAKE_CXX_FLAGS " ${OpenMP_CXX_FLAGS}")
-
-  	message(STATUS "----------!!!!! OpenMP IS ACTIVE  !!!!!  OpenMP_FOUND: ${OpenMP_FOUND}")
-  	message(STATUS "----------!!!!! OpenMP IS ACTIVE  !!!!!  OpenMP_VERSION: ${OpenMP_VERSION}")
-  	message(STATUS " OpenMP_C_FOUND: ${OpenMP_C_FOUND}")
-  	message(STATUS " OpenMP_CXX_FOUND: ${OpenMP_CXX_FOUND}")
-  	message(STATUS " OpenMP_INCLUDE_DIRS: ${OpenMP_INCLUDE_DIRS}")
-  	message(STATUS " OpenMP_C_INCLUDE_DIRS: ${OpenMP_C_INCLUDE_DIRS}")
-  	message(STATUS " OpenMP_CXX_INCLUDE_DIRS: ${OpenMP_CXX_INCLUDE_DIRS}")
-  	message(STATUS " OPENMP_INCLUDES: ${OPENMP_INCLUDES}")
-  	message(STATUS " OPENMP_LIBRARIES: ${OPENMP_LIBRARIES}")
-
 
   # We could use OpenMP_CXX_VERSION starting from CMake 3.9, but this value is only available on first run of CMake (see https://gitlab.kitware.com/cmake/cmake/issues/19150),
   # so we use always OpenMP_CXX_SPEC_DATE, which is available since CMake 3.7.
