@@ -41,8 +41,10 @@
 #ifndef PCL_FEATURES_IMPL_NORMAL_3D_OMP_H_
 #define PCL_FEATURES_IMPL_NORMAL_3D_OMP_H_
 
+
 #include <pcl/features/normal_3d_omp.h>
 #include <omp.h>
+#include <thread>
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointInT, typename PointOutT> void
@@ -60,7 +62,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::setNumberOfThreads (unsigned int 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointInT, typename PointOutT> void
-pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &output)
+pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureMP (PointCloudOut &output)
 {
   // Allocate enough space to hold the results
   // \note This resize is irrelevant for a radiusSearch ().
@@ -129,6 +131,105 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
     }
   }
 }
+
+
+template <typename PointInT, typename PointOutT> void
+pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudOut &output,
+  size_t i0, size_t i1, size_t t)
+{
+  // Allocate enough space to hold the results
+  // \note This resize is irrelevant for a radiusSearch ().
+  pcl::Indices nn_indices (k_);
+  std::vector<float> nn_dists (k_);
+
+  output.is_dense = true;
+
+  // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
+  if (input_->is_dense)
+  {
+
+    // Iterating over the entire index vector
+    for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
+    {
+      Eigen::Vector4f n;
+      if (this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
+        !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
+      {
+        output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
+
+        output.is_dense = false;
+        continue;
+      }
+
+      output[idx].normal_x = n[0];
+      output[idx].normal_y = n[1];
+      output[idx].normal_z = n[2];
+
+      flipNormalTowardsViewpoint ((*input_)[(*indices_)[idx]], vpx_, vpy_, vpz_,
+        output[idx].normal[0], output[idx].normal[1], output[idx].normal[2]);
+
+    }
+  }
+  else
+  {
+    // Iterating over the entire index vector
+    for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
+    {
+      Eigen::Vector4f n;
+      if (!isFinite ((*input_)[(*indices_)[idx]]) ||
+        this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
+        !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
+      {
+        output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
+
+        output.is_dense = false;
+        continue;
+      }
+
+      output[idx].normal_x = n[0];
+      output[idx].normal_y = n[1];
+      output[idx].normal_z = n[2];
+
+      flipNormalTowardsViewpoint ((*input_)[(*indices_)[idx]], vpx_, vpy_, vpz_,
+        output[idx].normal[0], output[idx].normal[1], output[idx].normal[2]);
+
+    }
+  }
+}
+
+template <typename PointInT, typename PointOutT> void
+pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &output)
+{
+
+  output.is_dense = true;
+
+  size_t chunk = indices_->size() / threads_;
+  std::vector<std::thread>
+#if __cplusplus> 201402L 
+    alignas(std::hardware_destructive_interference_size) 
+#endif 
+    ThPool;
+  size_t i0 = 0;
+  size_t i1 = chunk;
+
+  for (size_t t = 0; t < threads_; ++t)
+  {
+    if (t == threads_ - 1)
+      i1 = indices_->size();
+
+    ThPool.push_back( std::move( std::thread(&pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread,this,
+      std::ref(output),
+      i0, i1, t
+    )));
+    i0 += chunk;
+    i1 += chunk;
+  }
+
+  for (size_t t = 0; t < threads_; ++t)
+    ThPool[t].join();
+
+}
+
 
 #define PCL_INSTANTIATE_NormalEstimationOMP(T,NT) template class PCL_EXPORTS pcl::NormalEstimationOMP<T,NT>;
 

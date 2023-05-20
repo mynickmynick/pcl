@@ -96,6 +96,12 @@ namespace pcl
         * \param output the resultant point cloud model dataset that contains surface normals and curvatures
         */
       void
+      computeFeatureMP (PointCloudOut &output) ;
+
+      
+      void
+      computeFeatureThread (PointCloudOut &output, size_t i0, size_t i1, size_t t);
+      void
       computeFeature (PointCloudOut &output) override;
   };
 }

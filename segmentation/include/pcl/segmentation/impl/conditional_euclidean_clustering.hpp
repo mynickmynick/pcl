@@ -985,14 +985,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     )));
     i0 += chunk;
     i1 += chunk;
-/*
-    DWORD_PTR dw = SetThreadAffinityMask(ThPool.back().native_handle(), (DWORD_PTR((3 << (4*t)) ) ));
-    if (dw == 0)
-    {
-      DWORD dwErr = GetLastError();
-      std::cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
-    }
-    */
   }
 
   for (size_t t = 0; t < threadNumber; ++t)
