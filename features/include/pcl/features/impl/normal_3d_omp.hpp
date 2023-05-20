@@ -42,6 +42,7 @@
 #define PCL_FEATURES_IMPL_NORMAL_3D_OMP_H_
 
 #include <pcl/features/normal_3d_omp.h>
+#include <omp.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointInT, typename PointOutT> void
@@ -78,6 +79,12 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
     // Iterating over the entire index vector
     for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t> (indices_->size ()); ++idx)
     {
+      if (!idx)
+      {
+        int total_td = omp_get_num_threads();
+        printf("omp_get_num_threads %d \n", total_td);
+      }
+
       Eigen::Vector4f n;
       if (this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
           !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
@@ -107,6 +114,11 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
     // Iterating over the entire index vector
     for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t> (indices_->size ()); ++idx)
     {
+      if (!idx)
+      {
+        int total_td = omp_get_num_threads();
+        printf("omp_get_num_threads %d \n", total_td);
+      }
       Eigen::Vector4f n;
       if (!isFinite ((*input_)[(*indices_)[idx]]) ||
           this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
