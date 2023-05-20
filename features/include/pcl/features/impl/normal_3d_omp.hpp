@@ -142,19 +142,22 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   pcl::Indices nn_indices (k_);
   std::vector<float> nn_dists (k_);
 
-  shared_ptr<Indices> indices_ = make_shared<Indices>();
-  indices_->clear();
-  indices_->resize(this->indices_->size());
-  std::copy(this->indices_->begin(), this->indices_->end(), indices_->begin());
+  shared_ptr<Indices> indices = make_shared<Indices>();
+  indices->clear();
+  indices->resize(this->indices_->size());
+  std::copy(this->indices_->begin(), this->indices_->end(), indices->begin());
 
   //PointCloudConstPtr input_=this->input_;
   //const PointCloud input(*input_);
   pcl::NormalEstimation<PointInT, PointOutT> n;
-  //pcl::PointCloud<PointOutT> normals;
+  pcl::PointCloud<PointOutT> normals;
   n.setInputCloud(input_);
   n.setKSearch(this->k_);
-  n.indices_ = indices_;
-  n.computeFeature_(output,i0,i1);
+  n.indices_ = indices;
+  n.computeFeature_(normals,i0,i1);
+  // manca a copia dell output
+  //for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t> (indices->size ()); ++idx)
+  //output[idx]=nornals[idx];
   /*
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense

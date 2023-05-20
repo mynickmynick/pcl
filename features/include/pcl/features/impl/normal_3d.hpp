@@ -103,6 +103,8 @@ pcl::NormalEstimation<PointInT, PointOutT>::computeFeature_ (PointCloudOut &outp
   pcl::Indices nn_indices (k_);
   std::vector<float> nn_dists (k_);
 
+  if (indices_->size() < i1) i1 = indices_->size();
+
   output.is_dense = true;
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
   if (input_->is_dense)
