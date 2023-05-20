@@ -49,11 +49,14 @@ template <typename PointInT, typename PointOutT> void
 pcl::NormalEstimationOMP<PointInT, PointOutT>::setNumberOfThreads (unsigned int nr_threads)
 {
   if (nr_threads == 0)
+  {
 #ifdef _OPENMP
     threads_ = omp_get_num_procs();
+    printf("Setting normal mp threads %d\n", threads_);
 #else
     threads_ = 1;
 #endif
+  }
   else
     threads_ = nr_threads;
 }
@@ -79,11 +82,11 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
     // Iterating over the entire index vector
     for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t> (indices_->size ()); ++idx)
     {
-      if (!idx)
-      {
-        int total_td = omp_get_num_threads();
-        printf("omp_get_num_threads %d \n", total_td);
-      }
+     // if (!idx)
+    //  {
+     //   int total_td = omp_get_num_threads();
+     //   printf("omp_get_num_threads %d \n", total_td);
+    //  }
 
       Eigen::Vector4f n;
       if (this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
@@ -114,11 +117,11 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
     // Iterating over the entire index vector
     for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t> (indices_->size ()); ++idx)
     {
-      if (!idx)
-      {
-        int total_td = omp_get_num_threads();
-        printf("omp_get_num_threads %d \n", total_td);
-      }
+      //if (!idx)
+     // {
+     //   int total_td = omp_get_num_threads();
+     //   printf("omp_get_num_threads %d \n", total_td);
+     // }
       Eigen::Vector4f n;
       if (!isFinite ((*input_)[(*indices_)[idx]]) ||
           this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
