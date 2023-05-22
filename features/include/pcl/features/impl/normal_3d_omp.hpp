@@ -146,19 +146,19 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   indices->clear();
   indices->resize(this->indices_->size());
   std::copy(this->indices_->begin(), this->indices_->end(), indices->begin());
+  
+  std::shared_ptr<pcl::search::KdTree<PointInT>> searcher_;
+  // Initialize the search class
 
+    //if (input_->isOrganized())
+    //  searcher_.reset(new pcl::search::OrganizedNeighbor<PointInT>());
+    //else
+      searcher_.reset(new pcl::search::KdTree<PointInT>());
+
+  searcher_->setInputCloud(input_, indices);
+  
   //PointCloudConstPtr input_=this->input_;
   //const PointCloud input(*input_);
-  pcl::NormalEstimation<PointInT, PointOutT> n;
-  pcl::PointCloud<PointOutT> normals;
-  n.setInputCloud(input_);
-  n.setKSearch(this->k_);
-  n.indices_ = indices;
-  n.computeFeature_(normals,i0,i1);
-  // manca a copia dell output
-  //for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t> (indices->size ()); ++idx)
-  //output[idx]=nornals[idx];
-  /*
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
   if (input_->is_dense)
@@ -168,7 +168,8 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
     {
       Eigen::Vector4f n;
-      if (this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
+      if (//this->searchForNeighbors ((*indices)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher_->nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -193,7 +194,8 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     {
       Eigen::Vector4f n;
       if (!isFinite ((*input_)[(*indices_)[idx]]) ||
-        this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
+        //this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher_->nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -211,7 +213,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
 
     }
   }
-  */
+  
 }
 
 template <typename PointInT, typename PointOutT> void
