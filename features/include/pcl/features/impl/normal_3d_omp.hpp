@@ -161,8 +161,8 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
 
   
   //PointCloudConstPtr input_=this->input_;
-       const std::shared_ptr<const pcl::PointCloud<PointInT>> input(new PointCloud(*input_)) ;
-       const std::shared_ptr<const pcl::PointCloud<PointInT>> surface(new PointCloud(*surface_));
+  const std::shared_ptr<const pcl::PointCloud<PointInT>> input = input_;//(new PointCloud(*input_)) ;
+  const std::shared_ptr<const pcl::PointCloud<PointInT>> surface = surface_;//(new PointCloud(*surface_));
 
        PointCloudOut output;// (outp);
        output.resize(indices->size());
