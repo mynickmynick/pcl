@@ -162,7 +162,10 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   
   //PointCloudConstPtr input_=this->input_;
        const std::shared_ptr<const pcl::PointCloud<PointInT>> input(new PointCloud(*input_)) ;
-       PointCloudOut output(outp);
+       PointCloudOut output;// (outp);
+       output.resize(indices->size());
+       output.width = outp.width;
+       output.height = outp.height;
        searcher[t].setInputCloud(input, indices);
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
