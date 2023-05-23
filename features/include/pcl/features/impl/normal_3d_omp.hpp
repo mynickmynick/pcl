@@ -138,7 +138,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureMP (PointCloudOut &
 
 template <typename PointInT, typename PointOutT> void
 pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudOut &outp,
-  size_t i0, size_t i1, size_t t)
+  const size_t i0, const size_t i1, const size_t t)
 {
   // Allocate enough space to hold the results
   // \note This resize is irrelevant for a radiusSearch ().
