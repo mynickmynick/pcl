@@ -259,15 +259,14 @@ template <typename PointInT, typename PointOutT> void
 pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
   PointCloudConstPtr& cloud, PointCloudOut& output)
 {
-  input_ = cloud;
 
-
-  //if (!pcl::Feature::initCompute())
-  //{
-  //  output.width = output.height = 0;
-  //  output.clear();
-  //  return;
-  //}
+  pcl::NormalEstimation<PointInT, PointOutT>::setInputCloud(cloud);
+  if (!pcl::Feature<PointInT, PointOutT>::initCompute())
+  {
+    output.width = output.height = 0;
+    output.clear();
+    return;
+  }
 
   // Copy the header
   output.header = input_->header;
@@ -319,7 +318,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
   for (size_t t = 0; t < threads_; ++t)
     ThPool[t].join();
 
-  //pcl::Feature::deinitCompute();
+  pcl::Feature<PointInT, PointOutT>::deinitCompute();
 
 }
 
