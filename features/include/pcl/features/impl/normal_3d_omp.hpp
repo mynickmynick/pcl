@@ -169,7 +169,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
        output.resize(indices->size());
        output.width = outp.width;
        output.height = outp.height;
-       searcher[t].setInputCloud(input, indices);
+       
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
   if (input->is_dense)
@@ -180,7 +180,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     {
       Eigen::Vector4f n;
       if (//this->searchForNeighbors ((*indices)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
-        searcher[t].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher[0].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -206,7 +206,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       Eigen::Vector4f n;
       if (!isFinite ((*input)[(*indices)[idx]]) ||
         //this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
-        searcher[t].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher[0].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -236,7 +236,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
 {
 
   output.is_dense = true;
-  
+  searcher[0].setInputCloud(input_, indices_);
   size_t chunk = indices_->size() / threads_;
   std::vector<std::thread>
 #if __cplusplus> 201402L 
@@ -371,6 +371,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
 
 
   output.is_dense = true;
+  searcher[0].setInputCloud(input_, indices_);
 
   size_t chunk = indices_->size() / threads_;
   std::vector<std::thread>
