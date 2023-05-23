@@ -162,6 +162,8 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   
   //PointCloudConstPtr input_=this->input_;
        const std::shared_ptr<const pcl::PointCloud<PointInT>> input(new PointCloud(*input_)) ;
+       const std::shared_ptr<const pcl::PointCloud<PointInT>> surface(new PointCloud(*surface_));
+
        PointCloudOut output;// (outp);
        output.resize(indices->size());
        output.width = outp.width;
@@ -178,7 +180,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       Eigen::Vector4f n;
       if (//this->searchForNeighbors ((*indices)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
         searcher[t].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
-        !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
+        !pcl::computePointNormal (*surface, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
 
@@ -204,7 +206,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       if (!isFinite ((*input)[(*indices)[idx]]) ||
         //this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
         searcher[t].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
-        !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
+        !pcl::computePointNormal (*surface, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
 
@@ -305,12 +307,12 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
 
 
     // Do a fast check to see if the search parameters are well defined
-    if (search_radius_ != 0.0)
+    if (Feature<PointInT, PointOutT>::search_radius_ != 0.0)
     {
       if (k_ != 0)
       {
         PCL_ERROR("[pcl::%s::compute] ", getClassName().c_str());
-        PCL_ERROR("Both radius (%f) and K (%d) defined! ", search_radius_, k_);
+        PCL_ERROR("Both radius (%f) and K (%d) defined! ", Feature<PointInT, PointOutT>::search_radius_, k_);
         PCL_ERROR("Set one of them to zero first and then re-run compute ().\n");
         // Cleanup
         pcl::Feature<PointInT, PointOutT>::deinitCompute();
@@ -318,7 +320,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
       }
       else // Use the radiusSearch () function
       {
-        search_parameter_ = search_radius_;
+        search_parameter_ = Feature<PointInT, PointOutT>::search_radius_;
 
 
       }
