@@ -94,11 +94,7 @@ namespace pcl
     protected:
       /** \brief The number of threads the scheduler should use. */
       unsigned int threads_;
-      pcl::search::KdTree<PointInT >
-#if __cplusplus> 201402L 
-        alignas(std::hardware_destructive_interference_size)
-#endif 
-        searcher[32];
+      pcl::search::KdTree<PointInT >  searcher;
 
 
     private:
@@ -107,17 +103,13 @@ namespace pcl
         * \param output the resultant point cloud model dataset that contains surface normals and curvatures
         */
       void
-      computeFeatureMP (PointCloudOut &output) ;
+      computeFeature (PointCloudOut &output) override;
 
       
       void
       computeFeatureThread (PointCloudOut &output, size_t i0, size_t i1, size_t t);
       void
-      computeFeature (PointCloudOut &output) override;
-
-      inline void
-        setInputCloudMT(const
-          PointCloudConstPtr& cloud);
+      computeFeatureMT (PointCloudOut &output) ;
 
   };
 }

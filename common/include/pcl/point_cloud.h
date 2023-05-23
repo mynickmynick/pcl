@@ -392,7 +392,11 @@ namespace pcl
       pcl::PCLHeader header;
 
       /** \brief The point data. */
-      std::vector<PointT, Eigen::aligned_allocator<PointT> > points;
+      std::vector<PointT, Eigen::aligned_allocator<PointT> >
+#if __cplusplus> 201402L 
+        alignas(std::hardware_destructive_interference_size)
+#endif 
+        points;
 
       /** \brief The point cloud width (if organized as an image-structure). */
       std::uint32_t width = 0;
