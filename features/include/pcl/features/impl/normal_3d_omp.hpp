@@ -145,10 +145,10 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   pcl::Indices nn_indices (k_);
   std::vector<float> nn_dists (k_);
 
-  shared_ptr<Indices> indices = make_shared<Indices>();
-  indices->clear();
-  indices->resize(this->indices_->size());
-  std::copy(this->indices_->begin(), this->indices_->end(), indices->begin());
+  const shared_ptr<const Indices> indices = indices_;// = make_shared<Indices>();
+  //indices->clear();
+  //indices->resize(this->indices_->size());
+  //std::copy(this->indices_->begin(), this->indices_->end(), indices->begin());
   
  // std::shared_ptr<pcl::search::KdTree<PointInT>> searcher_;
   // Initialize the search class
@@ -161,6 +161,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
 
   
   //PointCloudConstPtr input_=this->input_;
+  //in general it's better to share unique areas for all threads if it's const (because the cache won't be invalidated and you'll have less RAM access)
   const std::shared_ptr<const pcl::PointCloud<PointInT>> input = input_;//(new PointCloud(*input_)) ;
   const std::shared_ptr<const pcl::PointCloud<PointInT>> surface = surface_;//(new PointCloud(*surface_));
 
