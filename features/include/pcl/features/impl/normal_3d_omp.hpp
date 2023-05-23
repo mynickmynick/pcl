@@ -269,12 +269,80 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
 {
 
   pcl::NormalEstimation<PointInT, PointOutT>::setInputCloud(cloud);
-  if (!pcl::Feature<PointInT, PointOutT>::initCompute())
+  /*if (!pcl::Feature<PointInT, PointOutT>::initCompute())
   {
     output.width = output.height = 0;
     output.clear();
     return;
+  }*/
+
+
+
+  {
+    if (!pcl::PCLBase<PointInT>::initCompute())
+    {
+      PCL_ERROR("[pcl::%s::initCompute] Init failed.\n", getClassName().c_str());
+      return ;
+    }
+
+    // If the dataset is empty, just return
+    if (input_->points.empty())
+    {
+      PCL_ERROR("[pcl::%s::compute] input_ is empty!\n", getClassName().c_str());
+      // Cleanup
+      pcl::Feature<PointInT, PointOutT>::deinitCompute();
+      return ;
+    }
+
+    // If no search surface has been defined, use the input dataset as the search surface itself
+    if (!pcl::Feature<PointInT, PointOutT>::surface_)
+    {
+      pcl::Feature<PointInT, PointOutT>::fake_surface_ = true;
+      pcl::Feature<PointInT, PointOutT>::surface_ = input_;
+    }
+
+
+
+
+    // Do a fast check to see if the search parameters are well defined
+    if (search_radius_ != 0.0)
+    {
+      if (k_ != 0)
+      {
+        PCL_ERROR("[pcl::%s::compute] ", getClassName().c_str());
+        PCL_ERROR("Both radius (%f) and K (%d) defined! ", search_radius_, k_);
+        PCL_ERROR("Set one of them to zero first and then re-run compute ().\n");
+        // Cleanup
+        pcl::Feature<PointInT, PointOutT>::deinitCompute();
+        return;
+      }
+      else // Use the radiusSearch () function
+      {
+        search_parameter_ = search_radius_;
+
+
+      }
+    }
+    else
+    {
+      if (k_ != 0) // Use the nearestKSearch () function
+      {
+        search_parameter_ = k_;
+
+      }
+      else
+      {
+        PCL_ERROR("[pcl::%s::compute] Neither radius nor K defined! ", getClassName().c_str());
+        PCL_ERROR("Set one of them to a positive number first and then re-run compute ().\n");
+        // Cleanup
+        pcl::Feature<PointInT, PointOutT>::deinitCompute();
+        return;
+      }
+    }
+
   }
+
+
 
   // Copy the header
   output.header = input_->header;
