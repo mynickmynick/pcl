@@ -68,6 +68,7 @@ namespace pcl
       using NormalEstimation<PointInT, PointOutT>::getViewPoint;
 
       using PointCloudOut = typename NormalEstimation<PointInT, PointOutT>::PointCloudOut;
+      using PointCloudConstPtr = typename NormalEstimation<PointInT, PointOutT>::PointCloudConstPtr;
 
     public:
       /** \brief Initialize the scheduler and set the number of threads to use.
@@ -103,6 +104,11 @@ namespace pcl
       computeFeatureThread (PointCloudOut &output, size_t i0, size_t i1, size_t t);
       void
       computeFeature (PointCloudOut &output) override;
+
+      inline void
+        setInputCloudMT(const
+          PointCloudConstPtr& cloud);
+
   };
 }
 

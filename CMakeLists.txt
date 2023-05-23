@@ -294,6 +294,16 @@ endif()
 
 ### ---[ Find universal dependencies
 
+#SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "C:/Users/Admin/source/repos/boost/out/install/x64-Debug/include/boost-1_81")
+#SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "C:/Users/Admin/source/repos/boost/out/install/x64-Debug/lib")
+FIND_PACKAGE(Boost)
+IF (Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
+    ADD_DEFINITIONS( "-DHAS_BOOST" )
+    message("BOOST FOUND")
+    ELSE()
+    message("BOOST NOT FOUND")
+ENDIF()
 # OpenMP (optional)
 option(WITH_OPENMP "Build with parallelization using OpenMP" TRUE)
 if(WITH_OPENMP)

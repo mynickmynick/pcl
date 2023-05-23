@@ -133,6 +133,9 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureMP (PointCloudOut &
 }
 
 
+
+
+
 template <typename PointInT, typename PointOutT> void
 pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudOut &output,
   size_t i0, size_t i1, size_t t)
@@ -155,10 +158,14 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     //else
       searcher_.reset(new pcl::search::KdTree<PointInT>());
 
-  searcher_->setInputCloud(input_, indices);
+
   
   //PointCloudConstPtr input_=this->input_;
-  //const PointCloud input(*input_);
+       const std::shared_ptr<const pcl::PointCloud<PointInT>> input(new PointCloud(*input_)) ;
+  
+
+  //searcher_->setInputCloud(input_, indices);
+  searcher_->setInputCloud(input, indices);
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
   if (input_->is_dense)
@@ -169,7 +176,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     {
       Eigen::Vector4f n;
       if (//this->searchForNeighbors ((*indices)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
-        searcher_->nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher_->nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -182,7 +189,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       output[idx].normal_y = n[1];
       output[idx].normal_z = n[2];
 
-      flipNormalTowardsViewpoint ((*input_)[(*indices_)[idx]], vpx_, vpy_, vpz_,
+      flipNormalTowardsViewpoint ((*input)[(*indices)[idx]], vpx_, vpy_, vpz_,
         output[idx].normal[0], output[idx].normal[1], output[idx].normal[2]);
 
     }
@@ -193,7 +200,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
     {
       Eigen::Vector4f n;
-      if (!isFinite ((*input_)[(*indices_)[idx]]) ||
+      if (!isFinite ((*input)[(*indices)[idx]]) ||
         //this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
         searcher_->nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
@@ -208,7 +215,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       output[idx].normal_y = n[1];
       output[idx].normal_z = n[2];
 
-      flipNormalTowardsViewpoint ((*input_)[(*indices_)[idx]], vpx_, vpy_, vpz_,
+      flipNormalTowardsViewpoint ((*input)[(*indices)[idx]], vpx_, vpy_, vpz_,
         output[idx].normal[0], output[idx].normal[1], output[idx].normal[2]);
 
     }
@@ -248,6 +255,20 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
     ThPool[t].join();
 
 }
+
+
+template <typename PointInT, typename PointOutT> inline void
+pcl::NormalEstimationOMP<PointInT, PointOutT>::setInputCloudMT(const
+  PointCloudConstPtr& cloud)
+{
+  input_ = cloud;
+  if (use_sensor_origin_)
+  {
+    vpx_ = input_->sensor_origin_.coeff(0);
+    vpy_ = input_->sensor_origin_.coeff(1);
+    vpz_ = input_->sensor_origin_.coeff(2);
+  }
+};
 
 
 #define PCL_INSTANTIATE_NormalEstimationOMP(T,NT) template class PCL_EXPORTS pcl::NormalEstimationOMP<T,NT>;
