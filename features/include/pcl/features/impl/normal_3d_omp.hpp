@@ -176,7 +176,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   {
 
     // Iterating over the entire index vector
-    for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
+    for (size_t idx = i0; idx < i1; ++idx)
     {
       Eigen::Vector4f n;
       if (//this->searchForNeighbors ((*indices)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
@@ -201,7 +201,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   else
   {
     // Iterating over the entire index vector
-    for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
+    for (size_t idx = i0; idx < i1; ++idx)
     {
       Eigen::Vector4f n;
       if (!isFinite ((*input)[(*indices)[idx]]) ||
@@ -226,7 +226,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   }
 
 
-  for (std::ptrdiff_t idx = i0; idx < static_cast<std::ptrdiff_t> (i1); ++idx)
+  for (size_t idx = i0; idx < i1; ++idx)
     outp[idx] = output[idx];
   
 }
