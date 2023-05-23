@@ -150,13 +150,13 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   indices->resize(this->indices_->size());
   std::copy(this->indices_->begin(), this->indices_->end(), indices->begin());
   
-  std::shared_ptr<pcl::search::KdTree<PointInT>> searcher_;
+ // std::shared_ptr<pcl::search::KdTree<PointInT>> searcher_;
   // Initialize the search class
 
     //if (input_->isOrganized())
     //  searcher_.reset(new pcl::search::OrganizedNeighbor<PointInT>());
     //else
-      searcher_.reset(new pcl::search::KdTree<PointInT>());
+     // searcher_.reset(new pcl::search::KdTree<PointInT>());
 
 
   
@@ -165,7 +165,8 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   
 
   //searcher_->setInputCloud(input_, indices);
-  searcher_->setInputCloud(input, indices);
+  //searcher_->setInputCloud(input, indices);
+       searcher[t].setInputCloud(input, indices);
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
   if (input_->is_dense)
@@ -176,7 +177,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
     {
       Eigen::Vector4f n;
       if (//this->searchForNeighbors ((*indices)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
-        searcher_->nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher[t].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -202,7 +203,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       Eigen::Vector4f n;
       if (!isFinite ((*input)[(*indices)[idx]]) ||
         //this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
-        searcher_->nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher[t].nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -262,12 +263,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::setInputCloudMT(const
   PointCloudConstPtr& cloud)
 {
   input_ = cloud;
-  if (use_sensor_origin_)
-  {
-    vpx_ = input_->sensor_origin_.coeff(0);
-    vpy_ = input_->sensor_origin_.coeff(1);
-    vpz_ = input_->sensor_origin_.coeff(2);
-  }
+
 };
 
 

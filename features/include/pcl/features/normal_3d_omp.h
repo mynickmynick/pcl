@@ -90,6 +90,12 @@ namespace pcl
     protected:
       /** \brief The number of threads the scheduler should use. */
       unsigned int threads_;
+      pcl::search::KdTree<PointInT >
+#if __cplusplus> 201402L 
+        alignas(std::hardware_destructive_interference_size)
+#endif 
+        searcher[32];
+
 
     private:
       /** \brief Estimate normals for all points given in <setInputCloud (), setIndices ()> using the surface in
