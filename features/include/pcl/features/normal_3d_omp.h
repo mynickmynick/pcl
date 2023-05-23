@@ -87,6 +87,10 @@ namespace pcl
       void
       setNumberOfThreads (unsigned int nr_threads = 0);
 
+      void
+        computeMT(const
+          PointCloudConstPtr& cloud, PointCloudOut& output);
+
     protected:
       /** \brief The number of threads the scheduler should use. */
       unsigned int threads_;

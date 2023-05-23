@@ -162,14 +162,10 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
   
   //PointCloudConstPtr input_=this->input_;
        const std::shared_ptr<const pcl::PointCloud<PointInT>> input(new PointCloud(*input_)) ;
-  
-
-  //searcher_->setInputCloud(input_, indices);
-  //searcher_->setInputCloud(input, indices);
        searcher[t].setInputCloud(input, indices);
 
   // Save a few cycles by not checking every point for NaN/Inf values if the cloud is set to dense
-  if (input_->is_dense)
+  if (input->is_dense)
   {
 
     // Iterating over the entire index vector
@@ -203,7 +199,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread (PointCloudO
       Eigen::Vector4f n;
       if (!isFinite ((*input)[(*indices)[idx]]) ||
         //this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0 ||
-        searcher[t].nearestKSearch((*input_)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
+        searcher[t].nearestKSearch((*input)[(*indices)[idx]], search_parameter_, nn_indices, nn_dists) == 0 ||
         !pcl::computePointNormal (*surface_, nn_indices, n, output[idx].curvature))
       {
         output[idx].normal[0] = output[idx].normal[1] = output[idx].normal[2] = output[idx].curvature = std::numeric_limits<float>::quiet_NaN ();
@@ -258,13 +254,74 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeature (PointCloudOut &ou
 }
 
 
-template <typename PointInT, typename PointOutT> inline void
-pcl::NormalEstimationOMP<PointInT, PointOutT>::setInputCloudMT(const
-  PointCloudConstPtr& cloud)
+
+template <typename PointInT, typename PointOutT> void
+pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
+  PointCloudConstPtr& cloud, PointCloudOut& output)
 {
   input_ = cloud;
 
-};
+
+  //if (!pcl::Feature::initCompute())
+  //{
+  //  output.width = output.height = 0;
+  //  output.clear();
+  //  return;
+  //}
+
+  // Copy the header
+  output.header = input_->header;
+
+  // Resize the output dataset
+  if (output.size() != indices_->size())
+    output.resize(indices_->size());
+
+  // Check if the output will be computed for all points or only a subset
+  // If the input width or height are not set, set output width as size
+  if (indices_->size() != input_->points.size() || input_->width * input_->height == 0)
+  {
+    output.width = indices_->size();
+    output.height = 1;
+  }
+  else
+  {
+    output.width = input_->width;
+    output.height = input_->height;
+  }
+  output.is_dense = input_->is_dense;
+
+
+
+  output.is_dense = true;
+
+  size_t chunk = indices_->size() / threads_;
+  std::vector<std::thread>
+#if __cplusplus> 201402L 
+    alignas(std::hardware_destructive_interference_size)
+#endif 
+    ThPool;
+  size_t i0 = 0;
+  size_t i1 = chunk;
+
+  for (size_t t = 0; t < threads_; ++t)
+  {
+    if (t == threads_ - 1)
+      i1 = indices_->size();
+
+    ThPool.push_back(std::move(std::thread(&pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureThread, this,
+      std::ref(output),
+      i0, i1, t
+    )));
+    i0 += chunk;
+    i1 += chunk;
+  }
+
+  for (size_t t = 0; t < threads_; ++t)
+    ThPool[t].join();
+
+  //pcl::Feature::deinitCompute();
+
+}
 
 
 #define PCL_INSTANTIATE_NormalEstimationOMP(T,NT) template class PCL_EXPORTS pcl::NormalEstimationOMP<T,NT>;
