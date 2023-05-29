@@ -605,19 +605,25 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
   std::unordered_set<PairS> connections;
   connections.clear();
-  shared_ptr<pcl::PointCloud<PointT>> input(new pcl::PointCloud<PointT>);
+
+
+
+  //like this if you wanna share read only const input_
+  const shared_ptr<const pcl::PointCloud<PointT>> input = input_; 
+
+  //like this if you wanna use a local copy of input_, but not necessary
+  //shared_ptr<pcl::PointCloud<PointT>> input(new pcl::PointCloud<PointT>);
+
+  //input->points.resize( this->input_->points.size());
+  //input->width = this->input_->width;
+  //input->height = this->input_->height;
+  //input->is_dense = this->input_->is_dense;
+  //for (size_t i=0;i< this->input_->points.size();++i)
+  //{
+  //  input->points[i] = this->input_->points[i];
+ //}
+
   shared_ptr<Indices> indices=make_shared<Indices>();
-
-
-  input->points.resize( this->input_->points.size());
-  input->width = this->input_->width;
-  input->height = this->input_->height;
-  input->is_dense = this->input_->is_dense;
-  for (size_t i=0;i< this->input_->points.size();++i)
-  {
-    input->points[i] = this->input_->points[i];
-  }
-
   indices->resize(this->indices_->size());
   for (size_t i=0;i< this->indices_->size();++i)
   {
