@@ -254,7 +254,7 @@ namespace pcl
       segment (IndicesClusters &clusters);
 
       void
-      segmentMT (IndicesClusters &clusters, const size_t threadNumber=2);
+      segmentMT (IndicesClusters &clusters, size_t threadNumber=2);
 
       void
       segment_ByConvexHull(IndicesClusters& clusters);

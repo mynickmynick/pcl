@@ -604,9 +604,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   clusterRecordsLoc.clear();
 
   std::unordered_set<PairS> connections;
+  connections.clear();
   shared_ptr<pcl::PointCloud<PointT>> input(new pcl::PointCloud<PointT>);
   shared_ptr<Indices> indices=make_shared<Indices>();
-  connections.clear();
+
 
   input->points.resize( this->input_->points.size());
   input->width = this->input_->width;
@@ -924,9 +925,21 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
 
 
 
+
+//to be checked several tips
+//1: try to make copies and separated in memory those data that can be written separately and merged in a simple way at the end (by simple index partition)
+//2: for those data that have to be shared in read/write during the computation, use atomic shared_mutex (for instance one shared_mutex for every index of a shared array) and try to segment it well to distribute it evenly and quite partially separately (to minimize cache invalidations)
+//3: declare const the more you can
+//4: #if __cplusplus> 201402L 
+//alignas(std::hardware_destructive_interference_size)
+//#endif for shared vars
+//5:those data that are shared but read only do not make separate copies and do not mutex
 template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &clusters, const size_t threadNumber)
+pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &clusters,  size_t threadNumber)
 {
+  const size_t max_threads = 32;
+  if (threadNumber > max_threads)
+    threadNumber = max_threads;
   // Prepare output (going to use push_back)
   clusters.clear ();
   std::mutex
@@ -967,7 +980,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 #if __cplusplus> 201402L 
     alignas(std::hardware_destructive_interference_size)
 #endif
-    connections[32];
+    connections[max_threads];
   size_t i0 = 0;
   size_t i1 = chunk;
   for (size_t t = 0; t < threadNumber; ++t)
