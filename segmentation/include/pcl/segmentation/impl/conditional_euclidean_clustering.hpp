@@ -623,6 +623,9 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
   //  input->points[i] = this->input_->points[i];
  //}
 
+ //like this if you wanna share read only const indices_: slower
+ // const shared_ptr<const Indices> indices = indices_;
+ //like this if you wanna use a local copy of indices_, but not necessary: appearantly just a little bit faster (but measure variable)
   shared_ptr<Indices> indices=make_shared<Indices>();
   indices->resize(this->indices_->size());
   for (size_t i=0;i< this->indices_->size();++i)
@@ -687,7 +690,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     while (cii < static_cast<int> (current_cluster.size ()))
     {
       // Search for neighbors around the current seed point of the current cluster
-      if (searcher_->radiusSearch ((*input)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances,8) < 1)
+      if (searcher_->radiusSearch ((*input)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances,64) < 1)
       {
         cii++;
         continue;
