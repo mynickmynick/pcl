@@ -970,6 +970,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
     }
     current_cluster.push_back (iindex);
 
+    size_t lastOBBUpdate = 0;
+
     Eigen::Matrix<float, 3, 1> centroid;
     Eigen::Matrix<float, 3, 3>  covariance_matrix ;
     Eigen::Matrix<float, 3, 1> obb_center;
@@ -1024,13 +1026,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
 
             if(local_cloud_cluster.back()->size() >OBB_UpdatePeriod_SamplesNr*OBB_CalculationStart_UpdatePeriodNr)//50
             {
-              if (local_cloud_cluster.back()->size() % OBB_UpdatePeriod_SamplesNr == 1)//this period must be a submultiple of the previous period //25
+              if (lastOBBUpdate != local_cloud_cluster.back()->size() &&
+                (local_cloud_cluster.back()->size() % OBB_UpdatePeriod_SamplesNr == 1)
+                )//this period must be a submultiple of the previous period //25
               {
+                lastOBBUpdate = local_cloud_cluster.back()->size();
 
-            //if (local_cloud_cluster.back()->size() > 50)//40
-            //{
-             // if (local_cloud_cluster.back()->size() % 50 == 1)//this period must be a submultiple of the previous period //20
-            //  {
                 Eigen::Matrix<float, 3, 1> temp_centroid = centroid;
                 Eigen::Matrix<float, 3, 3> temp_covariance_matrix = covariance_matrix;
                 Eigen::Matrix<float, 3, 1> temp_obb_center = obb_center;
@@ -1047,41 +1048,6 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
                   temp_obb_rotational_matrix,
                   temp_oldSize, temp_point_count);
 
-                //volume = temp_obb_dimensions[0] * temp_obb_dimensions[1] * temp_obb_dimensions[2];
-                //area = temp_obb_dimensions[0] * temp_obb_dimensions[1];
-                if (//flatness condition
-                  //volume * volume <=
-                  //UnflatnessThreshold * (area * area * area)
-                  temp_obb_dimensions[2] * temp_obb_dimensions[2] <=
-                  UnflatnessThreshold * (temp_obb_dimensions[0] * temp_obb_dimensions[1])
-                  )//unflatness: [0,1] 0:perfectly flat, 1:cube
-                {
-
-                  {// Add the point to the cluster
-
-                    {
-                      std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
-                      //I have to test it again cause it might have been processed in the meantime
-                      processed_ = processed[nn_indices[nii]];
-
-                      if (processed_)
-                      {
-                        PairS p;
-                        p.first = local_current_cluster_index; p.second= processed_;
-
-                        connections.insert(p);
-                      }
-                      else
-                      {// Add the point to the cluster
-                        current_cluster.push_back (nn_indices[nii]);
-                        local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-                        processed[nn_indices[nii]] = local_current_cluster_index;
-                      }
-                    }
-
-
-                  }
-
                   centroid = temp_centroid;
                   covariance_matrix = temp_covariance_matrix;
                   obb_center = temp_obb_center;
@@ -1094,10 +1060,11 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
                   middle_axis = obb_rotational_matrix.col(1);
                   minor_axis = obb_rotational_matrix.col(2);
 
-                }
+                
 
               }
-              else
+
+              //else
               {
                 float xd = (*input_)[nn_indices[nii]].x - centroid[0],
                   yd = (*input_)[nn_indices[nii]].y - centroid[1],
@@ -1109,9 +1076,15 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
 
 
                 if (//flatness condition
-                  (z<obb_dimensions[2]*0.75)||//(z<obb_dimensions[2]*0.5)||
+                  ((z<obb_dimensions[2]*0.55)
+                  &&
+                    (obb_dimensions[2] * obb_dimensions[2] <=
+                    UnflatnessThreshold * (obb_dimensions[0] * obb_dimensions[1]))
+                    )
+
+                  ||
                   (z * z <=
-                    1.5*UnflatnessThreshold * (x * y))//UnflatnessThreshold * (x * y))
+                    UnflatnessThreshold * (x * y))
                   )//unflatness: [0,1] 0:perfectly flat, 1:cube
                 {// Add the point to the cluster
 
