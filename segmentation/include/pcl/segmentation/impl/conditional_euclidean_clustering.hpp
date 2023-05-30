@@ -37,6 +37,12 @@
 #ifndef PCL_SEGMENTATION_IMPL_CONDITIONAL_EUCLIDEAN_CLUSTERING_HPP_
 #define PCL_SEGMENTATION_IMPL_CONDITIONAL_EUCLIDEAN_CLUSTERING_HPP_
 
+#if __cplusplus> 201402L 
+#define ALIGNAS__ alignas(std::hardware_destructive_interference_size)
+#else
+#define ALIGNAS__ 
+#endif
+
 #include <pcl/segmentation/conditional_euclidean_clustering.h>
 #include <pcl/search/organized.h> // for OrganizedNeighbor
 #include <pcl/search/kdtree.h> // for KdTree
@@ -378,221 +384,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByConvexHull (pcl::IndicesC
   deinitCompute ();
 }
 
-template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBB (pcl::IndicesClusters &clusters,
-  size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr)
-{
-  if (!OBB_UpdatePeriod_SamplesNr)
-    OBB_UpdatePeriod_SamplesNr = 1;
-
-  bool condition = true, conditionDisabled=(!condition_function_);
-  // Prepare output (going to use push_back)
-  clusters.clear ();
-
-
-  // Validity checks
-  if (!initCompute () || input_->points.empty () || indices_->empty ())
-    return;
-
-  // Initialize the search class
-  if (!searcher_)
-  {
-    if (input_->isOrganized ())
-      searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
-    else
-      searcher_.reset (new pcl::search::KdTree<PointT> ());
-  }
-  searcher_->setInputCloud (input_, indices_);
-
-  // Temp variables used by search class
-  Indices nn_indices;
-  std::vector<float> nn_distances;
-
-  // Create a bool vector of processed point indices, and initialize it to false
-  // Need to have it contain all possible points because radius search can not return indices into indices
-  std::vector<int> processed (input_->size (), false);
-
-  int clusterIndex = 1;
-  // Process all points indexed by indices_
-  for (const auto& iindex : (*indices_)) // iindex = input index
-  {
-    // Has this point been processed before?
-    if (iindex == UNAVAILABLE || processed[iindex])
-      continue;
-
-    // Set up a new growing cluster
-    Indices current_cluster;
-    int cii = 0;  // cii = cluster indices iterator
-
-    // Add the point to the cluster
-    current_cluster.push_back (iindex);
-
-    cloud_cluster.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
-    //cloud_cluster_hull.push_back(PointCloudPtr(new pcl::PointCloud<PointT >) );
-
-    Eigen::Matrix<float, 3, 1> centroid;
-    Eigen::Matrix<float, 3, 3>  covariance_matrix ;
-    Eigen::Matrix<float, 3, 1> obb_center;
-    Eigen::Matrix<float, 3, 1> obb_dimensions;
-    Eigen::Matrix<float, 3, 3> obb_rotational_matrix;
-    unsigned int oldSize = 0;
-    size_t point_count = 0;
-    Eigen::Matrix<float, 3, 1> major_axis;
-    Eigen::Matrix<float, 3, 1> middle_axis;
-    Eigen::Matrix<float, 3, 1> minor_axis;
-
-
-    cloud_cluster.back()->push_back((*input_)[iindex]);
-
-    processed[iindex] = clusterIndex;
-
-    // Process the current cluster (it can be growing in size as it is being processed)
-    while (cii < static_cast<int> (current_cluster.size ()))
-    {
-      //std::cout << "Trying new center ------\n";
-      // Search for neighbors around the current seed point of the current cluster
-      if (searcher_->radiusSearch ((*input_)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances) < 1)
-      {
-        cii++;
-        //std::cout << "Center skipped \n";
-        continue;
-      }
-
-      // Process the neighbors
-      //std::cout << "Processing neigbours " << static_cast<int> (nn_indices.size()) << std::endl;
-      for (int nii = 1; nii < static_cast<int> (nn_indices.size ()); ++nii)  // nii = neighbor indices iterator
-      {
-
-        // Has this point been processed before?
-        if (nn_indices[nii] == UNAVAILABLE || processed[nn_indices[nii]])
-          continue;
-
-        // Validate if condition holds
-        if (!conditionDisabled)
-          condition = condition_function_((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]);
-        if (condition)
-        {
-
-          if(cloud_cluster.back()->size()>OBB_UpdatePeriod_SamplesNr*OBB_CalculationStart_UpdatePeriodNr)//50
-          {
-            if (cloud_cluster.back()->size() % OBB_UpdatePeriod_SamplesNr == 1)//this period must be a submultiple of the previous period //25
-            {
-              Eigen::Matrix<float, 3, 1> temp_centroid=centroid;
-              Eigen::Matrix<float, 3, 3> temp_covariance_matrix=covariance_matrix;
-              Eigen::Matrix<float, 3, 1> temp_obb_center=obb_center;
-              Eigen::Matrix<float, 3, 1> temp_obb_dimensions=obb_dimensions;
-              Eigen::Matrix<float, 3, 3> temp_obb_rotational_matrix=obb_rotational_matrix;
-              unsigned int temp_oldSize = oldSize;
-              size_t temp_point_count=point_count;
-
-              updateCentroidAndOBB(*(cloud_cluster.back()),
-                temp_centroid,
-                temp_covariance_matrix,
-                temp_obb_center,
-                temp_obb_dimensions,
-                temp_obb_rotational_matrix,
-                temp_oldSize,
-                temp_point_count);
-
-              //volume = temp_obb_dimensions[0] * temp_obb_dimensions[1] * temp_obb_dimensions[2];
-              //area = temp_obb_dimensions[0] * temp_obb_dimensions[1];
-
-              if (//flatness condition
-                //volume * volume <=
-                //UnflatnessThreshold * (area * area * area)
-                temp_obb_dimensions[2] * temp_obb_dimensions[2] <=
-                UnflatnessThreshold * (temp_obb_dimensions[0] * temp_obb_dimensions[1])
-                )//unflatness: [0,1] 0:perfectly flat, 1:cube
-              {
-
-                // Add the point to the cluster
-                current_cluster.push_back(nn_indices[nii]);
-                cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-                processed[nn_indices[nii]] = clusterIndex;
-
-                centroid=temp_centroid;
-                covariance_matrix=temp_covariance_matrix;
-                obb_center=temp_obb_center;
-                obb_dimensions=temp_obb_dimensions;
-                obb_rotational_matrix=temp_obb_rotational_matrix;
-                oldSize =  temp_oldSize;
-                point_count = temp_point_count;
-
-                major_axis= obb_rotational_matrix.col(0);
-                middle_axis= obb_rotational_matrix.col(1);
-                minor_axis= obb_rotational_matrix.col(2);
-
-              }
-
-            }
-            else
-            {
-              float xd = (*input_)[nn_indices[nii]].x - centroid[0],
-                yd = (*input_)[nn_indices[nii]].y - centroid[1],
-                zd = (*input_)[nn_indices[nii]].z - centroid[2];
-
-              float x = std::abs(xd * major_axis(0) + yd * major_axis(1) + zd * major_axis(2));
-              float y = std::abs(xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2));
-              float z = std::abs(xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2));
-
-                if (//flatness condition
-                  (z<obb_dimensions[2]*0.75)||//(z<obb_dimensions[2]*0.5)||
-                  (z * z <=
-                  1.5*UnflatnessThreshold * (x * y))//UnflatnessThreshold * (x * y))
-                  )//unflatness: [0,1] 0:perfectly flat, 1:cube
-                {
-                  // Add the point to the cluster
-                  current_cluster.push_back(nn_indices[nii]);
-                  cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-                  processed[nn_indices[nii]] = clusterIndex;
-                }
-              
-
-            }
-
-
-
-
-          }
-          else
-          {
-            // Add the point to the cluster
-            current_cluster.push_back(nn_indices[nii]);
-            cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-
-            processed[nn_indices[nii]] = clusterIndex;
-
-          }
-        }
-      }
-      cii++;
-    }
-
-    //  clusters need to be saved only the ones within the given cluster size range
-    if (
-      (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
-        static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
-    {
-      pcl::PointIndices pi;
-      pi.header = input_->header;
-      pi.indices.resize (current_cluster.size ());
-      for (int ii = 0; ii < static_cast<int> (current_cluster.size ()); ++ii)  // ii = indices iterator
-        pi.indices[ii] = current_cluster[ii];
-
-      clusters.push_back (pi);
-    }
-
-
-  }
-
-  deinitCompute ();
-}
-
-
 //every time a thread writes on an area of memory being read by another thread not only potentially mutex-blocks it but also invalidates its cache so making it waste
 //both processing and memory time
 template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
+pcl::ConditionalEuclideanClustering<PointT>::segmentThread1(
   std::vector<size_t> & processed,
   std::vector<std::shared_mutex> & processed_mutex,
   std::unordered_set<PairS> & connections_out,
@@ -661,7 +456,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
     size_t i = j + (i1 - i0) / 2;
     if (i >= i1)
       i = i0 + (i - i1);
-    auto iindex = (*indices)[i];
+    const auto iindex = (*indices)[i];
     {
       local_current_cluster_index=iindex;//local_current_cluster_index= index of first point added to the cluster
     }
@@ -753,19 +548,10 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
     
 
-      {
-        //clusterRecordsGlob[local_current_cluster_index]=pi;
-      clusterRecordsLoc.push_back( std::make_pair(local_current_cluster_index, pi));
-      
-      }
-      {
-          //std::unique_lock<std::shared_mutex> ul(connections_mutex);
-          //if (local_current_cluster_index> max_cluster_index)
-          //  max_cluster_index = local_current_cluster_index;
-          //local_current_cluster_index=++current_cluster_index;
-      }
-    
 
+
+    clusterRecordsLoc.push_back( std::make_pair(local_current_cluster_index, pi));
+      
 
   }
 
@@ -780,7 +566,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld(
 
 
 template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segmentThread(
+pcl::ConditionalEuclideanClustering<PointT>::segmentThread2(
   SearcherPtr& searcher_,
     std::mutex & clusters_mutex,
   std::vector<size_t> & processed,
@@ -951,11 +737,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     threadNumber = max_threads;
   // Prepare output (going to use push_back)
   clusters.clear ();
-  std::mutex
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size)
-#endif
-    clusters_mutex;
+  std::mutex ALIGNAS__ clusters_mutex;
   current_cluster_index = 0;
 
   clusterRecordsGlob.clear();
@@ -968,28 +750,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
   // Create a bool vector of processed point indices, and initialize it to false
   // Need to have it contain all possible points because radius search can not return indices into indices
-  std::vector<size_t>
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size)
-#endif
-    processed (input_->size (), 0);
-  std::vector<std::shared_mutex>
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size)
-#endif
-    processed_mutex(input_->size ());
+  std::vector<size_t> ALIGNAS__   processed (input_->size (), 0);
+  std::vector<std::shared_mutex> ALIGNAS__  processed_mutex(input_->size ());
 
   size_t chunk = indices_->size() / threadNumber;
-  std::vector<std::thread>
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size)
-#endif
-    ThPool;
-  std::shared_ptr<std::unordered_set<PairS>>
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size)
-#endif
-    connections[max_threads];
+  std::vector<std::thread> ALIGNAS__   ThPool;
+  std::shared_ptr<std::unordered_set<PairS>>  ALIGNAS__  connections[max_threads];
   size_t i0 = 0;
   size_t i1 = chunk;
   for (size_t t = 0; t < threadNumber; ++t)
@@ -999,7 +765,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     connections[t] = std::make_shared<std::unordered_set<PairS>>();
     connections[t]->clear();
 
-    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThreadOld,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
+    ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segmentThread1,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
       std::ref(processed),
       std::ref(processed_mutex),
       std::ref(*(connections[t])),
@@ -1123,60 +889,87 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
   SearcherPtr& searcher_,
-  pcl::IndicesClusters &clusters,
-    std::mutex & clusters_mutex,
-  std::vector<std::set<size_t>> & processed,
+  std::vector<size_t> & processed,
   std::vector<std::shared_mutex> & processed_mutex,
-  size_t i0, size_t i1,
-  bool record_connections//only prepared not used yet (false)
+  std::unordered_set<PairS> & connections_out,
+  size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr,
+  size_t i0, size_t i1, size_t threadNumber
+
 
 )
 {
-  std::map<size_t, shared_ptr<pcl::PointIndices>> clusterRecords;
   std::vector<PointCloudPtr> local_cloud_cluster;
-  bool condition = true, conditionDisabled=(!condition_function_);
 
-  size_t local_current_cluster_index = 1;//[1..]
+  std::vector<std::pair<size_t,shared_ptr<pcl::PointIndices>>> clusterRecordsLoc;
+  clusterRecordsLoc.clear();
 
+  std::unordered_set<PairS> connections;
+  connections.clear();
+
+
+
+  //like this if you wanna share read only const input_
+  const shared_ptr<const pcl::PointCloud<PointT>> input = input_; 
+
+  //like this if you wanna use a local copy of input_, but not necessary
+  //shared_ptr<pcl::PointCloud<PointT>> input(new pcl::PointCloud<PointT>);
+
+  //input->points.resize( this->input_->points.size());
+  //input->width = this->input_->width;
+  //input->height = this->input_->height;
+  //input->is_dense = this->input_->is_dense;
+  //for (size_t i=0;i< this->input_->points.size();++i)
+  //{
+  //  input->points[i] = this->input_->points[i];
+  //}
+
+  //like this if you wanna share read only const indices_: slower
+  // const shared_ptr<const Indices> indices = indices_;
+  //like this if you wanna use a local copy of indices_, but not necessary: appearantly just a little bit faster (but measure variable)
+  shared_ptr<Indices> indices=make_shared<Indices>();
+  indices->resize(this->indices_->size());
+  for (size_t i=0;i< this->indices_->size();++i)
   {
-      std::unique_lock<std::shared_mutex> ul(connections_mutex);
-      local_current_cluster_index=++current_cluster_index;
+    (*indices)[i] = (*(this->indices_))[i];
   }
 
-
-  std::unordered_set<PairS> local_connections;
-
+  size_t local_current_cluster_index = 1;//[1..]
   // Temp variables used by search class
   Indices nn_indices;
   std::vector<float> nn_distances;
 
   // Process all points indexed by indices_
-  for(size_t i=i0;i<i1;++i)
+  // the following map may seem weird but it is more fair in distribution of work load because the algorithm proceeds by connection both bacward and forward on indexes
+  for(size_t j=i0;j<i1;++j)
   {
-    auto iindex = (*indices_)[i];
-
-    std::set<size_t> processed_;
+    size_t i = j + (i1 - i0) / 2;
+    if (i >= i1)
+      i = i0 + (i - i1);
+    const auto iindex = (*indices)[i];
     {
-      std::shared_lock<std::shared_mutex> slock(processed_mutex[iindex]);
-      processed_ = processed[iindex];
+      local_current_cluster_index=iindex;//local_current_cluster_index= index of first point added to the cluster
     }
-
-    // Has this point been processed before?
-    if (iindex == UNAVAILABLE || processed_.size()>0)
-      continue;
 
     // Set up a new growing cluster
     shared_ptr<pcl::PointIndices> pi=make_shared<pcl::PointIndices>();
     pi->header = input_->header;
     Indices & current_cluster=pi->indices;
     int cii = 0;  // cii = cluster indices iterator
+    size_t processed_ = 0;
 
-    // Add the FIRST point to the cluster
-    current_cluster.push_back (iindex);
     {
       std::unique_lock<std::shared_mutex> ulock(processed_mutex[iindex]);
-      processed[iindex].insert(local_current_cluster_index);
+      processed_ = processed[iindex];
+
+      // Has this point been processed before?
+      if (iindex == UNAVAILABLE || processed_)
+        continue;
+
+      // Add the FIRST point to the cluster
+      processed[iindex] = local_current_cluster_index;
     }
+    current_cluster.push_back (iindex);
+
     Eigen::Matrix<float, 3, 1> centroid;
     Eigen::Matrix<float, 3, 3>  covariance_matrix ;
     Eigen::Matrix<float, 3, 1> obb_center;
@@ -1193,7 +986,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
     while (cii < static_cast<int> (current_cluster.size ()))
     {
       // Search for neighbors around the current seed point of the current cluster
-      if (searcher_->radiusSearch ((*input_)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances) < 1)
+      if (searcher_->radiusSearch ((*input_)[current_cluster[cii]], cluster_tolerance_, nn_indices, nn_distances,64) < 1)
       {
         cii++;
         continue;
@@ -1206,195 +999,175 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
         if (nn_indices[nii] == UNAVAILABLE )
           continue;
 
-        std::set<size_t> processed_;
+        size_t processed_ = 0;
         {
           std::shared_lock<std::shared_mutex> slock(processed_mutex[nn_indices[nii]]);
           processed_ = processed[nn_indices[nii]];
         }
 
         // Has this point been processed before?
-        if (processed_.count(local_current_cluster_index))
+        if (processed_ == local_current_cluster_index)
           continue;
 
         // Validate if condition holds
-        if (!conditionDisabled)
-          condition = condition_function_((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]);
-
-        if (condition)
+        if (condition_function_((*input_)[current_cluster[cii]], (*input_)[nn_indices[nii]], nn_distances[nii]))
         {
 
-          if (local_cloud_cluster.back()->size() > 50)//40
+          if (processed_)
           {
-            if (local_cloud_cluster.back()->size() % 50 == 1)//this period must be a submultiple of the previous period //20
+            PairS p;
+            p.first = local_current_cluster_index; p.second= processed_;
+            connections.insert(p);
+          }
+          else
+          {
+
+            if(local_cloud_cluster.back()->size() >OBB_UpdatePeriod_SamplesNr*OBB_CalculationStart_UpdatePeriodNr)//50
             {
-              Eigen::Matrix<float, 3, 1> temp_centroid = centroid;
-              Eigen::Matrix<float, 3, 3> temp_covariance_matrix = covariance_matrix;
-              Eigen::Matrix<float, 3, 1> temp_obb_center = obb_center;
-              Eigen::Matrix<float, 3, 1> temp_obb_dimensions = obb_dimensions;
-              Eigen::Matrix<float, 3, 3> temp_obb_rotational_matrix = obb_rotational_matrix;
-              unsigned int temp_oldSize = oldSize;
-              size_t temp_point_count = point_count;
-
-              updateCentroidAndOBB(*(local_cloud_cluster.back()),
-                temp_centroid,
-                temp_covariance_matrix,
-                temp_obb_center,
-                temp_obb_dimensions,
-                temp_obb_rotational_matrix,
-                temp_oldSize, temp_point_count);
-
-              //volume = temp_obb_dimensions[0] * temp_obb_dimensions[1] * temp_obb_dimensions[2];
-              //area = temp_obb_dimensions[0] * temp_obb_dimensions[1];
-              if (//flatness condition
-                //volume * volume <=
-                //UnflatnessThreshold * (area * area * area)
-                temp_obb_dimensions[2] * temp_obb_dimensions[2] <=
-                UnflatnessThreshold * (temp_obb_dimensions[0] * temp_obb_dimensions[1])
-                )//unflatness: [0,1] 0:perfectly flat, 1:cube
+              if (local_cloud_cluster.back()->size() % OBB_UpdatePeriod_SamplesNr == 1)//this period must be a submultiple of the previous period //25
               {
 
-                {// Add the point to the cluster
-                  if (record_connections && processed_.size() > 0)
-                  {
-                    for (auto& a : processed_)
+            //if (local_cloud_cluster.back()->size() > 50)//40
+            //{
+             // if (local_cloud_cluster.back()->size() % 50 == 1)//this period must be a submultiple of the previous period //20
+            //  {
+                Eigen::Matrix<float, 3, 1> temp_centroid = centroid;
+                Eigen::Matrix<float, 3, 3> temp_covariance_matrix = covariance_matrix;
+                Eigen::Matrix<float, 3, 1> temp_obb_center = obb_center;
+                Eigen::Matrix<float, 3, 1> temp_obb_dimensions = obb_dimensions;
+                Eigen::Matrix<float, 3, 3> temp_obb_rotational_matrix = obb_rotational_matrix;
+                unsigned int temp_oldSize = oldSize;
+                size_t temp_point_count = point_count;
+
+                updateCentroidAndOBB(*(local_cloud_cluster.back()),
+                  temp_centroid,
+                  temp_covariance_matrix,
+                  temp_obb_center,
+                  temp_obb_dimensions,
+                  temp_obb_rotational_matrix,
+                  temp_oldSize, temp_point_count);
+
+                //volume = temp_obb_dimensions[0] * temp_obb_dimensions[1] * temp_obb_dimensions[2];
+                //area = temp_obb_dimensions[0] * temp_obb_dimensions[1];
+                if (//flatness condition
+                  //volume * volume <=
+                  //UnflatnessThreshold * (area * area * area)
+                  temp_obb_dimensions[2] * temp_obb_dimensions[2] <=
+                  UnflatnessThreshold * (temp_obb_dimensions[0] * temp_obb_dimensions[1])
+                  )//unflatness: [0,1] 0:perfectly flat, 1:cube
+                {
+
+                  {// Add the point to the cluster
+
                     {
-                      if (a != local_current_cluster_index)
+                      std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
+                      //I have to test it again cause it might have been processed in the meantime
+                      processed_ = processed[nn_indices[nii]];
+
+                      if (processed_)
                       {
                         PairS p;
-                        p.first = local_current_cluster_index; p.second = a;
-                        if (!local_connections.count(p))
-                        {
-                          local_connections.insert(p);
-                          {
-                            std::unique_lock<std::shared_mutex> ul(connections_mutex);
-                            gconnections.insert(p);//the two growing clusters will have to be connected
-                          }
-                        }
+                        p.first = local_current_cluster_index; p.second= processed_;
+
+                        connections.insert(p);
+                      }
+                      else
+                      {// Add the point to the cluster
+                        current_cluster.push_back (nn_indices[nii]);
+                        local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+                        processed[nn_indices[nii]] = local_current_cluster_index;
                       }
                     }
 
 
                   }
-                  //else
-                  //{
-                    // Add the point to the cluster anyway (if true the if above, it will be an intersection)
-                  current_cluster.push_back(nn_indices[nii]);
-                  local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-                  {
-                    std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
-                    processed[nn_indices[nii]].insert(local_current_cluster_index);
-                  }
-                  //}
+
+                  centroid = temp_centroid;
+                  covariance_matrix = temp_covariance_matrix;
+                  obb_center = temp_obb_center;
+                  obb_dimensions = temp_obb_dimensions;
+                  obb_rotational_matrix = temp_obb_rotational_matrix;
+                  oldSize = temp_oldSize;
+                  point_count = temp_point_count;
+
+                  major_axis = obb_rotational_matrix.col(0);
+                  middle_axis = obb_rotational_matrix.col(1);
+                  minor_axis = obb_rotational_matrix.col(2);
 
                 }
 
-                centroid = temp_centroid;
-                covariance_matrix = temp_covariance_matrix;
-                obb_center = temp_obb_center;
-                obb_dimensions = temp_obb_dimensions;
-                obb_rotational_matrix = temp_obb_rotational_matrix;
-                oldSize = temp_oldSize;
-                point_count = temp_point_count;
+              }
+              else
+              {
+                float xd = (*input_)[nn_indices[nii]].x - centroid[0],
+                  yd = (*input_)[nn_indices[nii]].y - centroid[1],
+                  zd = (*input_)[nn_indices[nii]].z - centroid[2];
 
-                major_axis = obb_rotational_matrix.col(0);
-                middle_axis = obb_rotational_matrix.col(1);
-                minor_axis = obb_rotational_matrix.col(2);
+                float x = std::abs(xd * major_axis(0) + yd * major_axis(1) + zd * major_axis(2));
+                float y = std::abs(xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2));
+                float z = std::abs(xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2));
+
+
+                if (//flatness condition
+                  (z<obb_dimensions[2]*0.75)||//(z<obb_dimensions[2]*0.5)||
+                  (z * z <=
+                    1.5*UnflatnessThreshold * (x * y))//UnflatnessThreshold * (x * y))
+                  )//unflatness: [0,1] 0:perfectly flat, 1:cube
+                {// Add the point to the cluster
+
+                  {
+                    std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
+                    //I have to test it again cause it might have been processed in the meantime
+                    processed_ = processed[nn_indices[nii]];
+
+                    if (processed_)
+                    {
+                      PairS p;
+                      p.first = local_current_cluster_index; p.second= processed_;
+
+                      connections.insert(p);
+                    }
+                    else
+                    {// Add the point to the cluster
+                      current_cluster.push_back (nn_indices[nii]);
+                      local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+                      processed[nn_indices[nii]] = local_current_cluster_index;
+                    }
+                  }
+
+                }
+
 
               }
+
+
+
 
             }
             else
-            {
-              float xd = (*input_)[nn_indices[nii]].x - centroid[0],
-                yd = (*input_)[nn_indices[nii]].y - centroid[1],
-                zd = (*input_)[nn_indices[nii]].z - centroid[2];
+            {// Add the point to the cluster
 
-              float x = std::abs(xd * major_axis(0) + yd * major_axis(1) + zd * major_axis(2));
-              float y = std::abs(xd * middle_axis(0) + yd * middle_axis(1) + zd * middle_axis(2));
-              float z = std::abs(xd * minor_axis(0) + yd * minor_axis(1) + zd * minor_axis(2));
-
-              if (//flatness condition
-                (z < obb_dimensions[2] * 0.5) ||
-                (z * z <=
-                  UnflatnessThreshold * (x * y))
-                )//unflatness: [0,1] 0:perfectly flat, 1:cube
-              {// Add the point to the cluster
-                if (record_connections && processed_.size() > 0)
-                {
-                  for (auto& a : processed_)
-                  {
-                    if (a != local_current_cluster_index)
-                    {
-                      PairS p;
-                      p.first = local_current_cluster_index; p.second = a;
-                      if (!local_connections.count(p))
-                      {
-                        local_connections.insert(p);
-                        {
-                          std::unique_lock<std::shared_mutex> ul(connections_mutex);
-                          gconnections.insert(p);//the two growing clusters will have to be connected
-                        }
-                      }
-                    }
-                  }
-
-
-                }
-                //else
-                //{
-                  // Add the point to the cluster anyway (if true the if above, it will be an intersection)
-                current_cluster.push_back(nn_indices[nii]);
-                local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-                {
-                  std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
-                  processed[nn_indices[nii]].insert(local_current_cluster_index);
-                }
-                //}
-
-              }
-
-
-            }
-
-
-
-
-          }
-          else
-          {// Add the point to the cluster
-
-            if (record_connections && processed_.size() > 0)
-            {
-              for (auto& a : processed_)
               {
-                if (a != local_current_cluster_index)
+                std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
+                //I have to test it again cause it might have been processed in the meantime
+                processed_ = processed[nn_indices[nii]];
+
+                if (processed_)
                 {
                   PairS p;
-                  p.first = local_current_cluster_index; p.second = a;
-                  if (!local_connections.count(p))
-                  {
-                    local_connections.insert(p);
-                    {
-                      std::unique_lock<std::shared_mutex> ul(connections_mutex);
-                      gconnections.insert(p);//the two growing clusters will have to be connected
-                    }
-                  }
+                  p.first = local_current_cluster_index; p.second= processed_;
+
+                  connections.insert(p);
+                }
+                else
+                {// Add the point to the cluster
+                  current_cluster.push_back (nn_indices[nii]);
+                  local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
+                  processed[nn_indices[nii]] = local_current_cluster_index;
                 }
               }
 
-
             }
-            //else
-            //{
-              // Add the point to the cluster anyway (if true the if above, it will be an intersection)
-            current_cluster.push_back(nn_indices[nii]);
-            local_cloud_cluster.back()->push_back((*input_)[nn_indices[nii]]);
-            {
-              std::unique_lock<std::shared_mutex> ulock(processed_mutex[nn_indices[nii]]);
-              processed[nn_indices[nii]].insert(local_current_cluster_index);
-            }
-            //}
-
           }
         }
 
@@ -1402,58 +1175,45 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread(
       cii++;
     }
 
-        //  clusters need to be saved only the ones within the given cluster size range
-    if (record_connections ||
-      (static_cast<int> (current_cluster.size ()) >= min_cluster_size_ &&
-        static_cast<int> (current_cluster.size ()) <= max_cluster_size_))
-      {
-
-        {
-          
-          if (record_connections)
-            clusterRecords[local_current_cluster_index] = pi;
-          else
-          {
-            const std::lock_guard<std::mutex> lock(clusters_mutex);
-            clusters.push_back(*pi);
-          }
-        }
-        {
-          std::unique_lock<std::shared_mutex> ul(connections_mutex);
-          if (local_current_cluster_index> max_cluster_index)
-            max_cluster_index = local_current_cluster_index;
-          local_current_cluster_index = ++current_cluster_index;
-        }
-
-      }
-
-
+    clusterRecordsLoc.push_back( std::make_pair(local_current_cluster_index, pi));
   }
-  if (record_connections)
-      {
-        //const std::lock_guard<std::mutex> lock(clusters_mutex);
-        for (auto& c : clusterRecords)
-          clusterRecordsGlob[c.first] = c.second;
-      }
+
+
+  //concentrated at the end some separate (so unlocked) but contiguous writes that disturb multithreading
+  connections_out.clear();
+  connections_out = connections;
+  for (auto& c : clusterRecordsLoc)
+    clusterRecordsGlob[c.first] = c.second;
 }
 
 
 
 
 template<typename PointT> void
-pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesClusters &clusters, const size_t threadNumber)
+pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesClusters &clusters,
+  size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr,
+  size_t threadNumber)
 {
+  const size_t max_threads = 32;
+  if (threadNumber > max_threads)
+    threadNumber = max_threads;
+
+  if (!OBB_UpdatePeriod_SamplesNr)
+    OBB_UpdatePeriod_SamplesNr = 1;
 
   // Prepare output (going to use push_back)
   clusters.clear ();
+  std::mutex  ALIGNAS__   clusters_mutex;
+  current_cluster_index = 0;
+
   clusterRecordsGlob.clear();
   clusterRecordsGlob.resize(input_->size());
   for (auto& c : clusterRecordsGlob) c.reset();
-  std::mutex clusters_mutex;
-  current_cluster_index = 0;
+
+
 
   // Validity checks
-  if (!initCompute () || input_->points.empty () || indices_->empty ())
+  if (!initCompute () || input_->points.empty () || indices_->empty () || !condition_function_)
     return;
 
 
@@ -1471,25 +1231,31 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
   // Create a bool vector of processed point indices, and initialize it to false
   // Need to have it contain all possible points because radius search can not return indices into indices
-  std::vector<std::set<size_t>> processed (input_->size ());
-  std::vector<std::shared_mutex> processed_mutex(input_->size ());
+  std::vector<size_t>   ALIGNAS__   processed (input_->size ());
+
+  std::vector<std::shared_mutex>   ALIGNAS__  processed_mutex(input_->size ());
 
   size_t chunk = indices_->size() / threadNumber;
-  std::vector<std::thread> ThPool;
+
+  std::vector<std::thread>    ALIGNAS__   ThPool;
+  std::shared_ptr<std::unordered_set<PairS>>   ALIGNAS__  connections[max_threads];
+
   size_t i0 = 0;
   size_t i1 = chunk;
   for (size_t t = 0; t < threadNumber; ++t)
   {
     if (t == threadNumber - 1)
       i1 = indices_->size();
+    connections[t] = std::make_shared<std::unordered_set<PairS>>();
+    connections[t]->clear();
 
     ThPool.push_back( std::move( std::thread(&pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBThread,this,//pcl::ConditionalEuclideanClustering::segmentThread<PointT>,
       std::ref(searcher_),
-      std::ref(clusters),
-      std::ref(clusters_mutex),
       std::ref(processed),
       std::ref(processed_mutex),
-      i0, i1, false
+      std::ref(*(connections[t])),
+      OBB_UpdatePeriod_SamplesNr, OBB_CalculationStart_UpdatePeriodNr,
+      i0, i1, t
     )));
     i0 += chunk;
     i1 += chunk;
@@ -1498,53 +1264,72 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
   for (size_t t = 0; t < threadNumber; ++t)
     ThPool[t].join();
 
+
   std::vector<std::set<size_t>> partition;//only partial partitions cause it doesn't include singletons
-  for (auto& conn : gconnections)
-  {
-    bool found = false;
-    for (auto& s : partition)
+  for (size_t t=0;t<threadNumber;++t)
+    for (auto& conn : (*(connections[t])))
     {
-      if (s.count(conn.first))
+      bool found = false;
+      std::vector<size_t> lastFound;
+      for (size_t i= 0;i<partition.size();++i)
       {
-        found = true;
-        s.insert(conn.second);
-        break;
+
+        if ( partition[i].count(conn.first ))
+        {
+          found = true;
+          partition[i].insert(conn.second);
+          lastFound.push_back(i);
+          continue;
+        }
+        if ( partition[i].count(conn.second))
+        {
+          found = true;
+          partition[i].insert(conn.first);
+          lastFound.push_back(i);
+          continue;
+        }
       }
-      if (s.count(conn.second))
+      while (lastFound.size()>1)
       {
-        found = true;
+#if __cplusplus> 201402L 
+        partition[lastFound[lastFound.size()-2]].merge(partition[lastFound[lastFound.size()-1]]);
+#else
+        for (auto& el : partition[lastFound[lastFound.size() - 1]])
+          partition[lastFound[lastFound.size() - 2]].insert(el);
+#endif
+        partition[lastFound[lastFound.size() - 1]].clear();
+        lastFound.pop_back();
+      }
+
+      if (!found)
+      {
+        std::set<size_t> s;
         s.insert(conn.first);
-        break;
+        s.insert(conn.second);
+        partition.push_back(s);
       }
     }
-    if (!found)
-    {
-      std::set<size_t> s;
-      s.insert(conn.first);
-      s.insert(conn.second);
-      partition.push_back(s);
-    }
-  }
   for (auto & p: partition)
-  {
-    size_t ss = 0;
-    for (auto& c : p)
+    if (p.size())
     {
-      if (clusterRecordsGlob[c])
+      size_t ss = 0;
+      for (auto& c : p)
       {
-        ss += clusterRecordsGlob[c]->indices.size();
+        if (clusterRecordsGlob[c])
+        {
+          ss += clusterRecordsGlob[c]->indices.size();
+        }
       }
-    }
-    if (
-      static_cast<int> (ss) >= min_cluster_size_ &&
-      static_cast<int> (ss) <= max_cluster_size_)
-    {
+      if (
+        static_cast<int> (ss) >= min_cluster_size_ &&
+        static_cast<int> (ss) <= max_cluster_size_)
+      {
         pcl::PointIndices pi;
         pi.header = input_->header;
         pi.indices.resize (ss);
 
         auto pii = pi.indices.begin();
-        
+
         for (auto& c : p)
         {
 
@@ -1556,27 +1341,29 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
         }
         clusters.push_back (pi);
-    }
-    else
-      for (auto& c : p)
-        clusterRecordsGlob[c].reset();
-  }
-  //for (auto& c : clusterRecordsGlob)
-  for (size_t i=0;i<max_cluster_index;++i)
-  {
-    auto c = clusterRecordsGlob[i];
-    if(c)
-    if (
-      static_cast<int> (c->indices.size()) >= min_cluster_size_ &&
-      static_cast<int> (c->indices.size()) <= max_cluster_size_)
-    {
-      pcl::PointIndices pi;
-      pi.header = input_->header;
-      pi.indices.resize (c->indices.size());
+      }
+      else
+        for (auto& c : p)
+          clusterRecordsGlob[c].reset();
 
-      std::copy(c->indices.begin(), c->indices.end(), pi.indices.begin());
-      clusters.push_back (pi);
+
     }
+  for (auto& c : clusterRecordsGlob)
+    //for (size_t i=0;i<max_cluster_index;++i)
+  {
+    //auto c = clusterRecordsGlob[i];
+    if(c)
+      if (
+        static_cast<int> (c->indices.size()) >= min_cluster_size_ &&
+        static_cast<int> (c->indices.size()) <= max_cluster_size_)
+      {
+        pcl::PointIndices pi;
+        pi.header = input_->header;
+        pi.indices.resize (c->indices.size());
+
+        std::copy(c->indices.begin(), c->indices.end(), pi.indices.begin());
+        clusters.push_back (pi);
+      }
   }
 
 

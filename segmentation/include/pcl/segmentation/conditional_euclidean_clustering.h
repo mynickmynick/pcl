@@ -259,11 +259,11 @@ namespace pcl
       void
       segment_ByConvexHull(IndicesClusters& clusters);
 
+
       void
-      segment_ByOBB(IndicesClusters& clusters,
-        size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr);
-      void
-      segment_ByOBBMT(IndicesClusters& clusters, const size_t threadNumber=2);
+      segment_ByOBBMT(IndicesClusters& clusters,
+        size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr,
+        const size_t threadNumber=2);
 
 
       /** \brief Get the clusters that are invalidated due to size constraints.
@@ -362,7 +362,7 @@ namespace pcl
         clusterRecordsGlob;
 
       void
-        segmentThreadOld(
+        segmentThread1(
           std::vector<size_t>& processed,
           std::vector<std::shared_mutex> & processed_mutex,
           std::unordered_set<PairS> & connections,
@@ -370,7 +370,7 @@ namespace pcl
         );
 
       void
-        segmentThread(
+        segmentThread2(//not used so far, more separated
           SearcherPtr& searcher_,
           std::mutex& clusters_mutex,
           std::vector<size_t>& processed,
@@ -381,11 +381,11 @@ namespace pcl
         void
         segment_ByOBBThread(
           SearcherPtr& searcher_,
-          pcl::IndicesClusters &clusters,
-          std::mutex& clusters_mutex,
-          std::vector<std::set<size_t>> & processed,
+          std::vector<size_t> & processed,
           std::vector<std::shared_mutex> & processed_mutex,
-          size_t i0, size_t i1, bool record_connections
+          std::unordered_set<PairS> & connections_out,
+          size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr,
+          size_t i0, size_t i1, size_t threadNumber
         );
 
 
