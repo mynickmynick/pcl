@@ -37,11 +37,7 @@
 #ifndef PCL_SEGMENTATION_IMPL_CONDITIONAL_EUCLIDEAN_CLUSTERING_HPP_
 #define PCL_SEGMENTATION_IMPL_CONDITIONAL_EUCLIDEAN_CLUSTERING_HPP_
 
-#if __cplusplus> 201402L 
-#define ALIGNAS__ alignas(std::hardware_destructive_interference_size)
-#else
-#define ALIGNAS__ 
-#endif
+
 
 #include <pcl/segmentation/conditional_euclidean_clustering.h>
 #include <pcl/search/organized.h> // for OrganizedNeighbor
@@ -725,9 +721,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentThread2(
 //1: try to make copies and separated in memory those data that can be written separately and merged in a simple way at the end (by simple index partition)
 //2: for those data that have to be shared in read/write during the computation, use atomic shared_mutex (for instance one shared_mutex for every index of a shared array) and try to segment it well to distribute it evenly and quite partially separately (to minimize cache invalidations)
 //3: declare const the more you can
-//4: #if __cplusplus> 201402L 
-//alignas(std::hardware_destructive_interference_size)
-//#endif for shared vars
+//4: MT_ALIGNAS for shared vars
 //5:those data that are shared but read only do not make separate copies and do not mutex
 template<typename PointT> void
 pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &clusters,  size_t threadNumber)
@@ -737,7 +731,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     threadNumber = max_threads;
   // Prepare output (going to use push_back)
   clusters.clear ();
-  std::mutex ALIGNAS__ clusters_mutex;
+  std::mutex MT_ALIGNAS clusters_mutex;
   current_cluster_index = 0;
 
   clusterRecordsGlob.clear();
@@ -750,12 +744,12 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
 
   // Create a bool vector of processed point indices, and initialize it to false
   // Need to have it contain all possible points because radius search can not return indices into indices
-  std::vector<size_t> ALIGNAS__   processed (input_->size (), 0);
-  std::vector<std::shared_mutex> ALIGNAS__  processed_mutex(input_->size ());
+  std::vector<size_t> MT_ALIGNAS   processed (input_->size (), 0);
+  std::vector<std::shared_mutex> MT_ALIGNAS  processed_mutex(input_->size ());
 
   size_t chunk = indices_->size() / threadNumber;
-  std::vector<std::thread> ALIGNAS__   ThPool;
-  std::shared_ptr<std::unordered_set<PairS>>  ALIGNAS__  connections[max_threads];
+  std::vector<std::thread> MT_ALIGNAS   ThPool;
+  std::shared_ptr<std::unordered_set<PairS>>  MT_ALIGNAS  connections[max_threads];
   size_t i0 = 0;
   size_t i1 = chunk;
   for (size_t t = 0; t < threadNumber; ++t)
@@ -804,7 +798,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segmentMT (pcl::IndicesClusters &cl
     }
     while (lastFound.size()>1)
     {
-#if __cplusplus> 201402L 
+#if CXX_STANDARD_ > 14
       partition[lastFound[lastFound.size()-2]].merge(partition[lastFound[lastFound.size()-1]]);
 #else
       for (auto& el : partition[lastFound[lastFound.size() - 1]])
@@ -1176,7 +1170,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
   // Prepare output (going to use push_back)
   clusters.clear ();
-  std::mutex  ALIGNAS__   clusters_mutex;
+  std::mutex  MT_ALIGNAS   clusters_mutex;
   current_cluster_index = 0;
 
   clusterRecordsGlob.clear();
@@ -1204,14 +1198,14 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
   // Create a bool vector of processed point indices, and initialize it to false
   // Need to have it contain all possible points because radius search can not return indices into indices
-  std::vector<size_t>   ALIGNAS__   processed (input_->size ());
+  std::vector<size_t>   MT_ALIGNAS   processed (input_->size ());
 
-  std::vector<std::shared_mutex>   ALIGNAS__  processed_mutex(input_->size ());
+  std::vector<std::shared_mutex>   MT_ALIGNAS  processed_mutex(input_->size ());
 
   size_t chunk = indices_->size() / threadNumber;
 
-  std::vector<std::thread>    ALIGNAS__   ThPool;
-  std::shared_ptr<std::unordered_set<PairS>>   ALIGNAS__  connections[max_threads];
+  std::vector<std::thread>    MT_ALIGNAS   ThPool;
+  std::shared_ptr<std::unordered_set<PairS>>   MT_ALIGNAS  connections[max_threads];
 
   size_t i0 = 0;
   size_t i1 = chunk;
@@ -1264,7 +1258,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
       }
       while (lastFound.size()>1)
       {
-#if __cplusplus> 201402L 
+#if CXX_STANDARD_>14
         partition[lastFound[lastFound.size()-2]].merge(partition[lastFound[lastFound.size()-1]]);
 #else
         for (auto& el : partition[lastFound[lastFound.size() - 1]])

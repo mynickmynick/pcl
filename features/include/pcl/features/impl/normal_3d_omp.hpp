@@ -238,11 +238,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeFeatureMT (PointCloudOut &
   output.is_dense = true;
   searcher.setInputCloud(input_, indices_);
   size_t chunk = indices_->size() / threads_;
-  std::vector<std::thread>
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size) 
-#endif 
-    ThPool;
+  std::vector<std::thread>  MT_ALIGNAS  ThPool;
   size_t i0 = 0;
   size_t i1 = chunk;
 
@@ -374,11 +370,7 @@ pcl::NormalEstimationOMP<PointInT, PointOutT>::computeMT(const
   searcher.setInputCloud(input_, indices_);
 
   size_t chunk = indices_->size() / threads_;
-  std::vector<std::thread>
-#if __cplusplus> 201402L 
-    alignas(std::hardware_destructive_interference_size)
-#endif 
-    ThPool;
+  std::vector<std::thread> MT_ALIGNAS ThPool;
   size_t i0 = 0;
   size_t i1 = chunk;
 

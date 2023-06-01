@@ -5,7 +5,10 @@ set(SUBSYS_DEPS)
 option(BUILD_GPU "Build the GPU-related subsystems" ${DEFAULT})
 
 if(NOT (BUILD_GPU AND CUDA_FOUND))
+  message("NOT (BUILD_GPU AND CUDA_FOUND)")
   return()
+  ELSE()
+  message(" (BUILD_GPU AND CUDA_FOUND)")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)

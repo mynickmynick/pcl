@@ -355,11 +355,7 @@ namespace pcl
 
       //end of critical section
 
-      std::vector<shared_ptr<pcl::PointIndices>>
-#if __cplusplus> 201402L 
-        alignas(std::hardware_destructive_interference_size)
-#endif
-        clusterRecordsGlob;
+      std::vector<shared_ptr<pcl::PointIndices>> MT_ALIGNAS clusterRecordsGlob;
 
       void
         segmentThread1(
