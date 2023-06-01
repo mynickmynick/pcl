@@ -113,6 +113,12 @@ namespace pcl
         return (alpha_);
       }
 
+      void
+        setComputeAreaVolume (bool value)
+      {
+        compute_area_ = value;
+      }
+
       /** \brief If set, the voronoi cells center will be saved in _voronoi_centers_
         * \param voronoi_centers
         */
@@ -149,6 +155,22 @@ namespace pcl
           dim_ = dimension;
         else
           PCL_ERROR ("[pcl::%s::setDimension] Invalid input dimension specified!\n", getClassName ().c_str ());
+      }
+
+      /** \brief Returns the total area of the convex hull. */
+      double
+        getTotalArea () const
+      {
+        return (total_area_);
+      }
+
+      /** \brief Returns the total volume of the convex hull. Only valid for 3-dimensional sets.
+      *  For 2D-sets volume is zero. 
+      */
+      double
+        getTotalVolume () const
+      {
+        return (total_volume_);
       }
 
       /** \brief Retrieve the indices of the input point cloud that for the convex hull.
@@ -201,6 +223,9 @@ namespace pcl
       
       /** \brief the dimensionality of the concave hull */
       int dim_;
+
+      bool compute_area_;
+      float total_area_, total_volume_;
 
       /** \brief vector containing the point cloud indices of the convex hull points. */
       pcl::PointIndices hull_indices_;

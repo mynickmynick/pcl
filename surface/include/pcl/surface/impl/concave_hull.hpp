@@ -144,7 +144,13 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
       dim_ = 2;
     else
       dim_ = 3;
-  } 
+  }
+
+
+
+    total_area_  = 0;
+    total_volume_ = 0;
+
 
   if (dim_ == 2)
   {
@@ -174,7 +180,16 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
   // True if qhull should free points in qh_freeqhull() or reallocation
   boolT ismalloc = True;
   // option flags for qhull, see qh_opt.htm
-  char flags[] = "qhull d QJ";
+  //char flags[] = "qhull d QJ";
+  std::string qhull_flags;
+  if (compute_area_)
+    qhull_flags = std::string ("qhull d QJ FA");
+  else
+    qhull_flags = std::string ("qhull d QJ ");
+
+  char flags[32];  strncpy(flags, qhull_flags.c_str(), 32);
+
+
   // output from qh_produce_output(), use NULL to skip qh_produce_output()
   FILE *outfile = nullptr;
   // error messages from qhull code
@@ -240,6 +255,7 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
   }
 
   qh_setvoronoi_all (qh);
+
 
   int num_vertices = qh->num_vertices;
   alpha_shape.resize (num_vertices);
@@ -543,6 +559,12 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
 
     if (voronoi_centers_)
       voronoi_centers_->points.resize (dd);
+  }
+
+  if (compute_area_)
+  {
+    total_area_  = qh->totarea;
+    total_volume_ = qh->totvol;
   }
 
   qh_freeqhull (qh, !qh_ALL);
