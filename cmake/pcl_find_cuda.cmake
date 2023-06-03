@@ -4,16 +4,27 @@ if(MSVC)
   set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE OFF CACHE BOOL "CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE")
 endif()
 
-set(CUDA_FIND_QUIETLY TRUE)
+#set(CUDA_FIND_QUIETLY TRUE)
+ message(STATUS "LOOKING FOR CUDA ")
+ set(CUDAXX "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe")
+ 
 find_package(CUDA 9.0)
 
 if(CUDA_FOUND)
+ message(STATUS "CUDA FOUND ")
   message(STATUS "Found CUDA Toolkit v${CUDA_VERSION_STRING}")
-  
+
+   message(STATUS "enable_language CUDA ")
   enable_language(CUDA)
+   message(STATUS "enableD _language CUDA ")
+
+   #include(CheckLanguage)
+   #check_language(CUDA)
+   message(STATUS "SETTING HAVE CUDA TRUE ")
   set(HAVE_CUDA TRUE)
 
   if (CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
+     message(STATUS "CMAKE_CUDA_COMPILER_ID STREQUAL NVIDIA ---  ${CMAKE_CUDA_COMPILER_ID}.")
     if(${CUDA_VERSION_STRING} VERSION_GREATER_EQUAL "11.1")
       execute_process(COMMAND ${CMAKE_CUDA_COMPILER} --list-gpu-code RESULT_VARIABLE EXIT_CODE OUTPUT_VARIABLE OUTPUT_VAL)
       if(EXIT_CODE EQUAL 0)
@@ -60,4 +71,7 @@ if(CUDA_FOUND)
     target_include_directories(pcl_cuda INTERFACE ${CUDA_TOOLKIT_INCLUDE})
     
   endif ()
+else()
+ message(STATUS "CUDA NOT FOUND!!!!!!!!!!!!!!!!")
+
 endif()
