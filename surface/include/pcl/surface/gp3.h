@@ -48,6 +48,7 @@
 
 #include <Eigen/Geometry> // for cross
 
+
 namespace pcl
 {
   struct PolygonMesh;
@@ -548,7 +549,24 @@ namespace pcl
       }
   };
 
-} // namespace pcl
+  template <typename PointInT, typename PointN>
+  inline double
+  greedyArea(
+       shared_ptr< pcl::PointCloud<PointInT>>& cloud,
+      double greedySearchRadius, // suggested >= 2.0*max(EuclideanConnection, VoxelLeaf)
+      int normal_k_search = 20,
+      float VoxelLeaf = 0.001,
+      bool enableVoxel = false,
+      double greedyMu = 2.5,
+      int greedyMaxNearestNeighbours = 100,
+      double greedyMaximumSurfaceAngle = (M_PI / 4), // 45 degrees
+      double greedyMinimumAngle = (M_PI / 18),       // 10 degrees
+      double greedyMaximumAngle = (2 * M_PI / 3),    // 120 degrees
+      bool greedyNormalConsistency = false,
+      unsigned int threadNrNormals = 2
+
+  );
+  } // namespace pcl
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/surface/impl/gp3.hpp>
