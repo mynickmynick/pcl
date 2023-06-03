@@ -174,7 +174,9 @@ namespace pcl
         changed_1st_fn_ (false),
         changed_2nd_fn_ (false),
         new2boundary_ (),
-        already_connected_ (false)
+        already_connected_ (false),
+        calcArea(false),
+        area (0.0)
       {};
 
       /** \brief Set the multiplier of the nearest neighbor distance to obtain the final search radius for each point
@@ -395,6 +397,12 @@ namespace pcl
       /** \brief Temporary variable to store 3 coordinates **/
       Eigen::Vector3f tmp_;
 
+      /** \brief flag to enable the calculation of the area of the mesh**/
+      bool calcArea;
+
+      /** \brief area of the mesh**/
+      double area;
+
       /** \brief The actual surface reconstruction method.
         * \param[out] output the resultant polygonal mesh
         */
@@ -485,6 +493,19 @@ namespace pcl
           triangle_.vertices[2] = c;
         }
         polygons.push_back (triangle_);
+
+        if (calcArea)
+        {
+          const Eigen::Matrix<double, 3, 1>
+            P((*input_)[(*indices_)[triangle_.vertices[0]]].x - (*input_)[(*indices_)[triangle_.vertices[2]]].x,
+              (*input_)[(*indices_)[triangle_.vertices[0]]].y - (*input_)[(*indices_)[triangle_.vertices[2]]].y,
+              (*input_)[(*indices_)[triangle_.vertices[0]]].z - (*input_)[(*indices_)[triangle_.vertices[2]]].z);
+          const Eigen::Matrix<double, 3, 1>
+            Q((*input_)[(*indices_)[triangle_.vertices[1]]].x - (*input_)[(*indices_)[triangle_.vertices[2]]].x,
+              (*input_)[(*indices_)[triangle_.vertices[1]]].y - (*input_)[(*indices_)[triangle_.vertices[2]]].y,
+              (*input_)[(*indices_)[triangle_.vertices[1]]].z - (*input_)[(*indices_)[triangle_.vertices[2]]].z);
+          area += 0.5 * P.cross(Q).norm();
+        }
       }
 
       /** \brief Add a new vertex to the advancing edge front and set its source point
