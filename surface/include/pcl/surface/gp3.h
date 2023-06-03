@@ -287,6 +287,20 @@ namespace pcl
       inline pcl::Indices
       getFFN () const { return (ffn_); }
 
+      /** \brief Get the calcArea flag value.
+       ** true to calculate the area of the mesh*/
+      inline bool
+      getCalcArea() const { return (calcArea); }
+
+      /** \brief Set the calcArea flag value.
+       ** true to calculate the area of the mesh*/
+      inline void
+      setCalcArea(bool value) { calcArea=value; }
+
+      /** \brief Get the Area value.*/
+      inline double
+      getArea() const { return (area); }
+
     protected:
       /** \brief The nearest neighbor distance multiplier to obtain the final search radius. */
       double mu_;

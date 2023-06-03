@@ -72,6 +72,7 @@ pcl::GreedyProjectionTriangulation<PointInT>::performReconstruction (std::vector
 template <typename PointInT> bool
 pcl::GreedyProjectionTriangulation<PointInT>::reconstructPolygons (std::vector<pcl::Vertices> &polygons)
 {
+  area = 0.0;
   if (search_radius_ <= 0 || mu_ <= 0)
   {
     polygons.clear ();
