@@ -55,8 +55,12 @@
 #include <utility>
 #include <vector>
 
-#if CXX_STANDARD_> 14 
+#if CXX_STANDARD_> 14
+#ifdef _WIN32
 #define MT_ALIGNAS alignas(std::hardware_destructive_interference_size)
+#else
+#define MT_ALIGNAS 
+#endif
 #else
 #define MT_ALIGNAS 
 #endif

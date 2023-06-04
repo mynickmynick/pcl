@@ -1708,9 +1708,9 @@ pcl::greedyArea(
 
     pcl::concatenateFields(*(cloud_f), *normalsGR, *cloud_with_normals);
 
-    pcl::search::KdTree<PointN>::Ptr tree2(new pcl::search::KdTree<PointN>);
-    tree2->setInputCloud(cloud_with_normals);
-{
+    //pcl::search::KdTree<PointN>::Ptr tree2(new pcl::search::KdTree<PointN>);
+    //tree2->setInputCloud(cloud_with_normals);
+
       pcl::GreedyProjectionTriangulation<PointN> gp3;
       gp3.setSearchRadius(greedySearchRadius);
       gp3.setMu(greedyMu);
@@ -1722,13 +1722,13 @@ pcl::greedyArea(
       gp3.setNormalConsistency(greedyNormalConsistency);
 
       gp3.setInputCloud(cloud_with_normals);
-      gp3.setSearchMethod(tree2);
+      //gp3.setSearchMethod(tree2);
 
       gp3.setCalcArea(true);
       gp3.reconstruct(pcl::PolygonMesh());
       return (gp3.getArea());
 
-    }
+    
 
 
   
