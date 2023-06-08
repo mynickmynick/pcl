@@ -1687,31 +1687,31 @@ pcl::greedyArea(
 {
 
     shared_ptr<pcl::PointCloud<PointInT>> cloud_f(new pcl::PointCloud<PointInT>);
-  if (enableVoxel) {
-    pcl::VoxelGrid<pcl::PointXYZRGB> vg;
-    vg.setInputCloud(cloud);
-    vg.setLeafSize(VoxelLeaf,
-                   VoxelLeaf,
-                   VoxelLeaf); // leaf size is normally in m but may be in mm if
-                               // the original Point Cloud has these XYZ values
-    vg.filter(*cloud_f);
-  }
-  else
-    cloud_f = cloud;
 
+    //optional voxeling section
+    if (enableVoxel) {
+      pcl::VoxelGrid<pcl::PointXYZRGB> vg;
+      vg.setInputCloud(cloud);
+      vg.setLeafSize(VoxelLeaf,
+                      VoxelLeaf,
+                      VoxelLeaf); // leaf size is normally in m but may be in mm if
+                                  // the original Point Cloud has these XYZ values
+      vg.filter(*cloud_f);
+    }
+    else
+      cloud_f = cloud;
+
+    //normals section in preparation for greedy mesh
     PointCloud<Normal>::Ptr normalsGR(new PointCloud<Normal>());
     pcl::NormalEstimationOMP<PointXYZRGB, Normal> nomp(threadNrNormals); // instantiate n threads
     nomp.setKSearch(normal_k_search);
     nomp.setInputCloud(cloud_f);
     nomp.compute(*normalsGR);
     shared_ptr<pcl::PointCloud<PointN>> cloud_with_normals(new pcl::PointCloud<PointN>);
-
     pcl::concatenateFields(*(cloud_f), *normalsGR, *cloud_with_normals);
 
-    //pcl::search::KdTree<PointN>::Ptr tree2(new pcl::search::KdTree<PointN>);
-    //tree2->setInputCloud(cloud_with_normals);
-
       pcl::GreedyProjectionTriangulation<PointN> gp3;
+
       gp3.setSearchRadius(greedySearchRadius);
       gp3.setMu(greedyMu);
       gp3.setMaximumNearestNeighbors(greedyMaxNearestNeighbours);
@@ -1733,6 +1733,73 @@ pcl::greedyArea(
 
   
 }
+
+
+//to be completed (not clear at all how to handle indexes)
+template <typename PointInT, typename PointN>
+inline double
+pcl::greedyArea(
+    shared_ptr< pcl::PointCloud<PointInT>>& cloud,
+    const IndicesPtr &indices,
+    double greedySearchRadius, 
+    int normal_k_search,
+    float VoxelLeaf,
+    bool enableVoxel,
+    double greedyMu,
+    int greedyMaxNearestNeighbours,
+    double greedyMaximumSurfaceAngle, 
+    double greedyMinimumAngle,     
+    double greedyMaximumAngle,  
+    bool greedyNormalConsistency,
+    unsigned int threadNrNormals 
+)
+{
+
+    shared_ptr<pcl::PointCloud<PointInT>> cloud_f(new pcl::PointCloud<PointInT>);
+
+    //optional voxeling section
+    if (enableVoxel) {
+       std::cout << "Before voxel indices size " << indices->size() >> "\n";
+      pcl::VoxelGrid<pcl::PointXYZRGB> vg;
+      vg.setInputCloud(cloud);
+      vg.setIndices(indices);
+      vg.setLeafSize(VoxelLeaf, VoxelLeaf, VoxelLeaf); // leaf size is normally in m but may be in mm if
+                                  // the original Point Cloud has these XYZ values
+      vg.filter(*cloud_f);
+      std::cout << "After voxel indices size " << indices->size() >> "\n";
+    }
+    else
+      cloud_f = cloud;
+
+    //normals section in preparation for greedy mesh
+    PointCloud<Normal>::Ptr normalsGR(new PointCloud<Normal>());
+    pcl::NormalEstimationOMP<PointXYZRGB, Normal> nomp(threadNrNormals); // instantiate n threads
+    nomp.setKSearch(normal_k_search);
+    nomp.setInputCloud(cloud_f);
+    nomp.setIndices(indices);
+    nomp.compute(*normalsGR);
+    shared_ptr<pcl::PointCloud<PointN>> cloud_with_normals(new pcl::PointCloud<PointN>);
+    pcl::concatenateFields(*(cloud_f), *normalsGR, *cloud_with_normals);
+
+      pcl::GreedyProjectionTriangulation<PointN> gp3;
+      gp3.setSearchRadius(greedySearchRadius);
+      gp3.setMu(greedyMu);
+      gp3.setMaximumNearestNeighbors(greedyMaxNearestNeighbours);
+
+      gp3.setMaximumSurfaceAngle(greedyMaximumSurfaceAngle);
+      gp3.setMinimumAngle(greedyMinimumAngle);
+      gp3.setMaximumAngle(greedyMaximumAngle);
+      gp3.setNormalConsistency(greedyNormalConsistency);
+
+      gp3.setInputCloud(cloud_with_normals);
+      gp3.setIndices(indices);
+
+      gp3.setCalcArea(true);
+      gp3.reconstruct(pcl::PolygonMesh());
+      return (gp3.getArea());
+
+}
+
 
 #define PCL_INSTANTIATE_GreedyProjectionTriangulation(T)                \
   template class PCL_EXPORTS pcl::GreedyProjectionTriangulation<T>;

@@ -1233,8 +1233,8 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
     ThPool[t].join();
 
 
-  std::vector<std::set<size_t>> partition;//only partial partitions cause it doesn't include singletons
-  for (size_t t=0;t<threadNumber;++t)
+  std::vector<std::set<size_t>> partition;//only partial partition cause it doesn't include singletons
+  for (size_t t=0;t<threadNumber;++t)//build partial partition given by multithreads connections
     for (auto& conn : (*(connections[t])))
     {
       bool found = false;
@@ -1277,7 +1277,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
         partition.push_back(s);
       }
     }
-  for (auto & p: partition)
+  for (auto & p: partition)//gather clusters from partial partition
     if (p.size())
     {
       size_t ss = 0;
@@ -1316,7 +1316,7 @@ pcl::ConditionalEuclideanClustering<PointT>::segment_ByOBBMT (pcl::IndicesCluste
 
 
     }
-  for (auto& c : clusterRecordsGlob)
+  for (auto& c : clusterRecordsGlob)//gather clusters from singletons
     //for (size_t i=0;i<max_cluster_index;++i)
   {
     //auto c = clusterRecordsGlob[i];
