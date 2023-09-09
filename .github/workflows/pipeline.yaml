@@ -1,3 +1,8 @@
+name: pipeline
+
+
+on: [push, pull_request]
+
 trigger:
   paths:
     exclude:
