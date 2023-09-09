@@ -513,7 +513,33 @@ namespace pcl
       }
   };
 
-} // namespace pcl
+
+   /** \brief Calculate the area of a triangle mesh
+   * \param[in] cloud the point cloud to which the mesh is applied
+   * \param[in] indices of the point cloud
+   * \param[in] triangleMesh a triangle mesh
+   * \return the mesh area
+   * \note example of use:
+   * pcl::GreedyProjectionTriangulation<PointN> gp;
+   * gp.setInputCloud(cloud_with_normals)
+   * ...
+   * pcl::PolygonMesh pm;
+   * gp3.reconstruct(pm);
+   * calculatePolygonArea(cloud_with_normals, pm.vertices);
+   * \ingroup
+   * common
+   */
+  template <typename PointT>
+  inline float
+  computeTriangleMeshArea(const shared_ptr <pcl::PointCloud<PointT>> &cloud,
+                          std::vector<pcl::Vertices> &triangleMesh);
+
+  template <typename PointT>
+  inline float
+  computeTriangleMeshArea(const shared_ptr<pcl::PointCloud<PointT>> &cloud,
+                          const shared_ptr<Indices>& indices,
+                          std::vector<pcl::Vertices>& triangleMesh);
+  } // namespace pcl
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/surface/impl/gp3.hpp>
