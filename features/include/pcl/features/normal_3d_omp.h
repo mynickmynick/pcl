@@ -68,6 +68,7 @@ namespace pcl
       using NormalEstimation<PointInT, PointOutT>::getViewPoint;
 
       using PointCloudOut = typename NormalEstimation<PointInT, PointOutT>::PointCloudOut;
+      using PointCloudConstPtr = typename NormalEstimation<PointInT, PointOutT>::PointCloudConstPtr;
 
     public:
       /** \brief Initialize the scheduler and set the number of threads to use.
@@ -87,9 +88,15 @@ namespace pcl
       void
       setNumberOfThreads (unsigned int nr_threads = 0);
 
+      void
+        computeMT(const
+          PointCloudConstPtr& cloud, PointCloudOut& output);
+
     protected:
       /** \brief The number of threads the scheduler should use. */
       unsigned int threads_;
+      pcl::search::KdTree<PointInT >  searcher;
+
 
       /** \brief Chunk size for (dynamic) scheduling. */
       int chunk_size_;
@@ -100,6 +107,13 @@ namespace pcl
         */
       void
       computeFeature (PointCloudOut &output) override;
+
+      
+      void
+      computeFeatureThread (PointCloudOut &output, size_t i0, size_t i1, size_t t);
+      void
+      computeFeatureMT (PointCloudOut &output) ;
+
   };
 }
 

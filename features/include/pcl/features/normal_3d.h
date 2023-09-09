@@ -387,6 +387,9 @@ namespace pcl
           vpz_ = 0;
         }
       }
+
+      void
+        computeFeature_ (PointCloudOut &output, size_t i0, size_t i1) ;
       
     protected:
       /** \brief Estimate normals for all points given in <setInputCloud (), setIndices ()> using the surface in
@@ -396,6 +399,7 @@ namespace pcl
         */
       void
       computeFeature (PointCloudOut &output) override;
+
 
       /** \brief Values describing the viewpoint ("pinhole" camera model assumed). For per point viewpoints, inherit
         * from NormalEstimation and provide your own computeFeature (). By default, the viewpoint is set to 0,0,0. */

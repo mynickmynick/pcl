@@ -46,6 +46,7 @@
 
 // PCL includes
 #include <pcl/surface/reconstruction.h>
+//#include <../../surface/include/pcl/surface/reconstruction.h>
 #include <pcl/PolygonMesh.h>
 
 namespace pcl
@@ -107,15 +108,17 @@ namespace pcl
         * \param[out] polygons the resultant convex hull polygons, as a set of
         * vertices. The Vertices structure contains an array of point indices.
         */
-      void
+      int
       reconstruct (PointCloud &points,
                    std::vector<pcl::Vertices> &polygons);
 
       /** \brief Compute a convex hull for all points given.
         * \param[out] points the resultant points lying on the convex hull.
         */
-      void
-      reconstruct (PointCloud &points);
+      int
+        reconstruct(PointCloudPtr & points);//(PointCloud &points);
+      int
+        reconstruct(PointCloud &points);
 
       /** \brief If set to true, the qhull library is called to compute the total area and volume of the convex hull.
         * NOTE: When this option is activated, the qhull library produces output to the console.
@@ -182,7 +185,7 @@ namespace pcl
         * vertices. The Vertices structure contains an array of point indices.
         * \param[in] fill_polygon_data true if polygons should be filled, false otherwise
         */
-      void
+      int 
       performReconstruction (PointCloud &points, 
                              std::vector<pcl::Vertices> &polygons, 
                              bool fill_polygon_data = false);
@@ -194,7 +197,7 @@ namespace pcl
         * vertices. The Vertices structure contains an array of point indices.
         * \param[in] fill_polygon_data true if polygons should be filled, false otherwise
         */
-      void
+      int
       performReconstruction2D (PointCloud &points, 
                                std::vector<pcl::Vertices> &polygons, 
                                bool fill_polygon_data = false);
@@ -206,7 +209,7 @@ namespace pcl
         * vertices. The Vertices structure contains an array of point indices.
         * \param[in] fill_polygon_data true if polygons should be filled, false otherwise
         */
-      void
+      int
       performReconstruction3D (PointCloud &points, 
                                std::vector<pcl::Vertices> &polygons, 
                                bool fill_polygon_data = false);
@@ -265,6 +268,8 @@ namespace pcl
 
       /* \brief vector containing the point cloud indices of the convex hull points. */
       pcl::PointIndices hull_indices_;
+
+      int res_;
 
       public:
         PCL_MAKE_ALIGNED_OPERATOR_NEW

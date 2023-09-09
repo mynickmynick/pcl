@@ -55,6 +55,16 @@
 #include <utility>
 #include <vector>
 
+#if CXX_STANDARD_> 14
+#ifdef _WIN32
+#define MT_ALIGNAS alignas(std::hardware_destructive_interference_size)
+#else
+#define MT_ALIGNAS 
+#endif
+#else
+#define MT_ALIGNAS 
+#endif
+
 namespace pcl
 {
   namespace detail
@@ -392,7 +402,9 @@ namespace pcl
       pcl::PCLHeader header;
 
       /** \brief The point data. */
-      std::vector<PointT, Eigen::aligned_allocator<PointT> > points;
+      std::vector<PointT, Eigen::aligned_allocator<PointT> >
+        //MT_ALIGNAS
+        points;
 
       /** \brief The point cloud width (if organized as an image-structure). */
       std::uint32_t width = 0;

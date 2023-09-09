@@ -1,6 +1,6 @@
 set(SUBSYS_NAME surface)
 set(SUBSYS_DESC "Point cloud surface library")
-set(SUBSYS_DEPS common search kdtree octree)
+set(SUBSYS_DEPS common search kdtree octree filters)
 set(SUBSYS_EXT_DEPS "")
 
 set(build TRUE)
@@ -182,7 +182,7 @@ include_directories(
 )
 PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs} ${VTK_SMOOTHING_INCLUDES} ${POISSON_INCLUDES} ${OPENNURBS_INCLUDES} ${ON_NURBS_INCLUDES})
 
-target_link_libraries("${LIB_NAME}" pcl_common pcl_search pcl_kdtree pcl_octree ${ON_NURBS_LIBRARIES})
+target_link_libraries("${LIB_NAME}" pcl_common pcl_search pcl_kdtree pcl_octree pcl_filters ${ON_NURBS_LIBRARIES})
 
 if(VTK_FOUND)
   if(${VTK_VERSION} VERSION_GREATER_EQUAL 9.0)

@@ -40,10 +40,42 @@
 #include <pcl/memory.h>
 #include <pcl/pcl_base.h>
 #include <pcl/pcl_macros.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/console/print.h> // for PCL_WARN
 #include <pcl/search/search.h> // for Search
+#include <shared_mutex>
+#include <set>
+#include <unordered_set>
+#include <map>
 
 #include <functional>
+//#include <vector>
+namespace pcl {
+  class PairS {
+  public:
+    size_t first;
+    size_t second;
+    bool operator==(const PairS& other) const {
+      return (other.first == first && other.second == second)
+        || (other.first == second && other.second == first);
+    };
+
+  };
+}
+
+namespace std
+{
+  template<>
+  struct hash<pcl::PairS>
+  {
+    size_t
+      operator()(const pcl::PairS& obj) const
+    {
+      return hash<size_t>()(obj.first + obj.second);
+    }
+  };
+}
 
 namespace pcl
 {
@@ -84,6 +116,7 @@ namespace pcl
   template<typename PointT>
   class ConditionalEuclideanClustering : public PCLBase<PointT>
   {
+
     protected:
       using SearcherPtr = typename pcl::search::Search<PointT>::Ptr;
 
@@ -91,6 +124,8 @@ namespace pcl
       using PCLBase<PointT>::indices_;
       using PCLBase<PointT>::initCompute;
       using PCLBase<PointT>::deinitCompute;
+      using PointCloudPtr = shared_ptr<pcl::PointCloud<PointT>>; //already defined in PCLBase
+      
 
     public:
       /** \brief Constructor.
@@ -218,6 +253,19 @@ namespace pcl
       void
       segment (IndicesClusters &clusters);
 
+      void
+      segmentMT (IndicesClusters &clusters, size_t threadNumber=2);
+
+      void
+      segment_ByConvexHull(IndicesClusters& clusters);
+
+
+      void
+      segment_ByOBBMT(IndicesClusters& clusters,
+        size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr,
+        const size_t threadNumber=2);
+
+
       /** \brief Get the clusters that are invalidated due to size constraints.
         * \note The constructor of this class needs to be initialized with true, and the segment method needs to have been called prior to using this method.
         * \param[out] small_clusters The resultant clusters that contain less than min_cluster_size points
@@ -233,6 +281,15 @@ namespace pcl
         }
         small_clusters = small_clusters_;
         large_clusters = large_clusters_;
+      }
+
+      void setUnflatnessThreshold(float th)
+      {
+        UnflatnessThreshold = th;
+      }
+      float getUnflatnessThreshold()
+      {
+        return UnflatnessThreshold;
       }
 
     private:
@@ -259,6 +316,74 @@ namespace pcl
 
       /** \brief The resultant clusters that contain more than max_cluster_size points */
       pcl::IndicesClustersPtr large_clusters_;
+
+      
+      std::vector<PointCloudPtr> cloud_cluster;
+
+      float UnflatnessThreshold=0.25;
+
+
+
+      /*
+        struct PairHasher
+        {
+          
+          size_t operator()(const Pair & obj) const
+          {
+            return std::hash<size_t>()(obj.first+obj.second);
+          }
+        };
+      namespace std
+      {
+        template<>
+          struct hash<PairS>
+          {
+            size_t
+            operator()(const PairS & obj) const
+            {
+              return hash<size_t>()(obj.first+obj.second);
+            }
+          };
+      }*/
+
+
+     // start of critical section
+      std::shared_mutex connections_mutex;
+      std::unordered_set<PairS> gconnections;
+      size_t current_cluster_index = 1;//[1..]
+      size_t max_cluster_index = 1;//[1..]
+
+      //end of critical section
+
+      std::vector<shared_ptr<pcl::PointIndices>> MT_ALIGNAS clusterRecordsGlob;
+
+      void
+        segmentThread1(
+          std::vector<size_t>& processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          std::unordered_set<PairS> & connections,
+          size_t i0, size_t i1, size_t threadNumber
+        );
+
+      void
+        segmentThread2(//not used so far, more separated
+          SearcherPtr& searcher_,
+          std::mutex& clusters_mutex,
+          std::vector<size_t>& processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          size_t i0, size_t i1
+        );
+
+        void
+        segment_ByOBBThread(
+          SearcherPtr& searcher_,
+          std::vector<size_t> & processed,
+          std::vector<std::shared_mutex> & processed_mutex,
+          std::unordered_set<PairS> & connections_out,
+          size_t OBB_UpdatePeriod_SamplesNr, size_t OBB_CalculationStart_UpdatePeriodNr,
+          size_t i0, size_t i1, size_t threadNumber
+        );
+
 
     public:
       PCL_MAKE_ALIGNED_OPERATOR_NEW
