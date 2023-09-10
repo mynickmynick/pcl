@@ -614,6 +614,13 @@ namespace pcl
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
+  struct EIGEN_ALIGN16 _PointXYZdRGB {
+    PCL_ADD_POINT4Dd; // This adds the members x,y,z which can also be accessed using the
+                     // point (which is double[4])
+    PCL_ADD_RGB;
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
   struct EIGEN_ALIGN16 _PointXYZRGBL
   {
     PCL_ADD_POINT4D; // This adds the members x,y,z which can also be accessed using the point (which is float[4])

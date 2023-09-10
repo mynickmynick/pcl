@@ -111,6 +111,11 @@ namespace pcl
     */
   struct PointXYZRGB;
 
+  /** \brief Members: float x, y, z, rgb
+   * \ingroup common
+   */
+  struct PointXYZdRGB;
+
   /** \brief Members: float x, y, z, rgb, std::uint32_t label
     * \ingroup common
     */
