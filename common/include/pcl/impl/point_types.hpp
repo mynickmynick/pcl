@@ -247,6 +247,16 @@ namespace pcl
     }; \
   };
 
+  #define PCL_ADD_UNION_POINT4Dd                                                          \
+  union EIGEN_ALIGN16 {                                                                \
+    double data[4];                                                                     \
+    struct {                                                                           \
+      double x;                                                                         \
+      double y;                                                                         \
+      double z;                                                                         \
+    };                                                                                 \
+  };
+
 #define PCL_ADD_EIGEN_MAPS_POINT4D \
   inline pcl::Vector2fMap getVector2fMap () { return (pcl::Vector2fMap (data)); } \
   inline pcl::Vector2fMapConst getVector2fMap () const { return (pcl::Vector2fMapConst (data)); } \
@@ -262,6 +272,10 @@ namespace pcl
 #define PCL_ADD_POINT4D \
   PCL_ADD_UNION_POINT4D \
   PCL_ADD_EIGEN_MAPS_POINT4D
+
+ #define PCL_ADD_POINT4Dd                                                                \
+  PCL_ADD_UNION_POINT4Dd                                                                \
+ // PCL_ADD_EIGEN_MAPS_POINT4D
 
 #define PCL_ADD_UNION_NORMAL4D \
   union EIGEN_ALIGN16 { \
@@ -343,6 +357,13 @@ namespace pcl
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
+ struct _PointXYZd {
+    PCL_ADD_POINT4Dd; // This adds the members x,y,z which can also be accessed using the
+                     // point (which is double[4])
+
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
   PCL_EXPORTS std::ostream& operator << (std::ostream& os, const PointXYZ& p);
   /** \brief A point structure representing Euclidean xyz coordinates. (SSE friendly)
     * \ingroup common
@@ -356,6 +377,20 @@ namespace pcl
     inline constexpr PointXYZ (float _x, float _y, float _z) : _PointXYZ{{{_x, _y, _z, 1.f}}} {}
 
     friend std::ostream& operator << (std::ostream& os, const PointXYZ& p);
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
+ struct EIGEN_ALIGN16 PointXYZd : public _PointXYZd {
+    inline constexpr PointXYZd(const _PointXYZd& p) : PointXYZd(p.x, p.y, p.z) {}
+
+    inline constexpr PointXYZd() : PointXYZd(0., 0., 0.) {}
+
+    inline constexpr PointXYZd(double _x, double _y, double _z)
+    : _PointXYZd{{{_x, _y, _z, 1.0}}}
+    {}
+
+    friend std::ostream&
+    operator<<(std::ostream& os, const PointXYZd& p);
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 

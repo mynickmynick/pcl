@@ -61,6 +61,11 @@ namespace pcl
     */
   struct PointXYZ;
 
+  /** \brief Members: float x, y, z
+   * \ingroup common
+   */
+  struct PointXYZd;
+
   /** \brief Members: rgba
     * \ingroup common
     */
