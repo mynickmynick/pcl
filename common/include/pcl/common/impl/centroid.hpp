@@ -705,7 +705,7 @@ updateMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
       }
       if (point_count != 0)
       {
-        Scalar oldWeight = ((Scalar)old_point_count) / ((Scalar)(old_point_count+point_count));
+        Scalar oldWeight = (static_cast<Scalar>(old_point_count) / static_cast<Scalar>(old_point_count+point_count));
         Scalar newWeight = 1.0-oldWeight;
         Eigen::Matrix<Scalar, 4, 1> oldCentroid = centroid;
         accu /= static_cast<Scalar> (point_count);

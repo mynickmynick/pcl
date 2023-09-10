@@ -8,13 +8,13 @@ if(POLICY CMP0074)
 endif()
 
 # Set target C++ standard and required compiler features
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "The target C++ standard. PCL requires C++17 or higher.")
-add_compile_definitions(CXX_STANDARD_=17)
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "The target C++ standard. PCL requires C++20 or higher.")
+add_compile_definitions(CXX_STANDARD_=20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(PCL_CXX_COMPILE_FEATURES cxx_std_17)
+set(PCL_CXX_COMPILE_FEATURES cxx_std_20)
 
-set(CMAKE_CUDA_STANDARD 14 CACHE STRING "The target CUDA/C++ standard. PCL requires CUDA/C++ 14 or higher.")
+set(CMAKE_CUDA_STANDARD 17 CACHE STRING "The target CUDA/C++ standard. PCL requires CUDA/C++ 17 or higher.")
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "possible configurations" FORCE)

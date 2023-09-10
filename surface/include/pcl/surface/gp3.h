@@ -47,6 +47,8 @@
 #include <fstream>
 
 #include <Eigen/Geometry> // for cross
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
 
 
 namespace pcl
