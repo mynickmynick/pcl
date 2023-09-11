@@ -392,18 +392,12 @@ template<typename PointT> bool
 pcl::search::OrganizedNeighbor<PointT>::projectPoint(const PointT& point,
                                                      pcl::PointXY& q) const
 {
-  if (typeid(point.x) == typeid(float)) {
+ {//to be done better
+    auto pointf = PointXYZ(static_cast<float>(point.x),
+                           static_cast<float>(point.y),
+                           static_cast<float>(point.z));
     Eigen::Vector3f projected =
-        KR_ * point.getVector3fMap() + projection_matrix_.block<3, 1>(0, 3);
-    q.x = projected[0] / projected[2];
-    q.y = projected[1] / projected[2];
-    return (projected[2] != 0);
-  }
-  else {
-    Eigen::Vector3f projected;
-    projected[0] = KR_ * point.x;// + projection_matrix_.block<3, 1>(0, 3)[0];   to be done
-    projected[1] = KR_ * point.y;// + projection_matrix_.block<3, 1>(0, 3)[1];
-    projected[2] = KR_ * point.z;// + projection_matrix_.block<3, 1>(0, 3)[2];
+        KR_ * pointf.getVector3fMap() + projection_matrix_.block<3, 1>(0, 3);
     q.x = projected[0] / projected[2];
     q.y = projected[1] / projected[2];
     return (projected[2] != 0);
