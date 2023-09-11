@@ -62,11 +62,13 @@
 // Define all PCL point types
 #define PCL_POINT_TYPES         \
   (pcl::PointXYZ)               \
+  (pcl::PointXYZd)               \
   (pcl::PointXYZI)              \
   (pcl::PointXYZL)              \
   (pcl::Label)                  \
   (pcl::PointXYZRGBA)           \
   (pcl::PointXYZRGB)            \
+  (pcl::PointXYZdRGB)            \
   (pcl::PointXYZRGBL)           \
   (pcl::PointXYZLAB)            \
   (pcl::PointXYZHSV)            \
@@ -114,6 +116,7 @@
 #define PCL_RGB_POINT_TYPES     \
   (pcl::PointXYZRGBA)           \
   (pcl::PointXYZRGB)            \
+  (pcl::PointXYZdRGB)            \
   (pcl::PointXYZRGBL)           \
   (pcl::PointXYZRGBNormal)      \
   (pcl::PointSurfel)            \
@@ -125,6 +128,7 @@
   (pcl::PointXYZL)            \
   (pcl::PointXYZRGBA)         \
   (pcl::PointXYZRGB)          \
+  (pcl::PointXYZdRGB)          \
   (pcl::PointXYZRGBL)         \
   (pcl::PointXYZLAB)          \
   (pcl::PointXYZHSV)          \
@@ -630,6 +634,7 @@ namespace pcl
   };
 
   PCL_EXPORTS std::ostream& operator << (std::ostream& os, const PointXYZRGB& p);
+  PCL_EXPORTS std::ostream& operator << (std::ostream& os, const PointXYZdRGB& p);
   /** \brief A point structure representing Euclidean xyz coordinates, and the RGB color.
     *
     * Due to historical reasons (PCL was first developed as a ROS package), the
@@ -678,6 +683,31 @@ namespace pcl
       _PointXYZRGB{{{_x, _y, _z, 1.0f}}, {{{_b, _g, _r, 255}}}} {}
 
     friend std::ostream& operator << (std::ostream& os, const PointXYZRGB& p);
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
+  struct EIGEN_ALIGN16 PointXYZdRGB : public _PointXYZdRGB {
+    inline constexpr PointXYZdRGB(const _PointXYZdRGB& p)
+    : PointXYZdRGB{p.x, p.y, p.z, p.r, p.g, p.b}
+    {}
+
+    inline constexpr PointXYZdRGB() : PointXYZdRGB(0., 0., 0.) {}
+
+    inline constexpr PointXYZdRGB(std::uint8_t _r, std::uint8_t _g, std::uint8_t _b)
+    : PointXYZdRGB(0., 0., 0., _r, _g, _b)
+    {}
+
+    inline constexpr PointXYZdRGB(double _x, double _y, double _z)
+    : PointXYZdRGB(_x, _y, _z, 0, 0, 0)
+    {}
+
+    inline constexpr PointXYZdRGB(
+        double _x, double _y, double _z, std::uint8_t _r, std::uint8_t _g, std::uint8_t _b)
+    : _PointXYZdRGB{{{_x, _y, _z, 1.0f}}, {{{_b, _g, _r, 255}}}}
+    {}
+
+    friend std::ostream&
+    operator<<(std::ostream& os, const PointXYZdRGB& p);
     PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
@@ -1844,6 +1874,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::_PointXYZRGB,
     (float, rgb, rgb)
 )
 POINT_CLOUD_REGISTER_POINT_WRAPPER(pcl::PointXYZRGB, pcl::_PointXYZRGB)
+POINT_CLOUD_REGISTER_POINT_WRAPPER(pcl::PointXYZdRGB, pcl::_PointXYZdRGB)
 
 POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::_PointXYZRGBL,
     (float, x, x)

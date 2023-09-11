@@ -119,6 +119,14 @@ namespace pcl
     return (os);
   }
 
+  std::ostream&
+  operator<<(std::ostream& os, const PointXYZdRGB& p)
+  {
+    os << "(" << p.x << "," << p.y << "," << p.z << " - " << static_cast<int>(p.r)
+       << "," << static_cast<int>(p.g) << "," << static_cast<int>(p.b) << ")";
+    return (os);
+  }
+
   std::ostream& 
   operator << (std::ostream& os, const PointXYZRGBL& p)
   {

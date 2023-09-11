@@ -333,6 +333,24 @@ namespace pcl
       }
   };
 
+  template <>
+  class DefaultPointRepresentation<PointXYZd> : public PointRepresentation<PointXYZd> {
+  public:
+    DefaultPointRepresentation()
+    {
+      nr_dimensions_ = 3;
+      trivial_ = true;
+    }
+
+    void
+    copyToFloatArray(const PointXYZd& p, float* out) const override
+    {
+      out[0] = p.x;
+      out[1] = p.y;
+      out[2] = p.z;
+    }
+  };
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <>
   class DefaultPointRepresentation <PointXYZI> : public  PointRepresentation <PointXYZI>
