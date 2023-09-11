@@ -60,6 +60,9 @@
 #include <type_traits>                  // for enable_if_t
 
 // Define all PCL point types
+#define PCL_POINTd_TYPES \
+  (pcl::PointXYZd)               \
+  (pcl::PointXYZdRGB)
 #define PCL_POINT_TYPES         \
   (pcl::PointXYZ)               \
   (pcl::PointXYZd)               \
@@ -113,6 +116,8 @@
   (pcl::PointDEM)
 
 // Define all point types that include RGB data
+#define PCL_RGB_POINTd_TYPES     \
+  (pcl::PointXYZdRGB)           
 #define PCL_RGB_POINT_TYPES     \
   (pcl::PointXYZRGBA)           \
   (pcl::PointXYZRGB)            \
@@ -122,8 +127,12 @@
   (pcl::PointSurfel)            \
 
 // Define all point types that include XYZ data
+#define PCL_XYZ_POINTd_TYPES   \
+  (pcl::PointXYZd)             \
+  (pcl::PointXYZdRGB)         
 #define PCL_XYZ_POINT_TYPES   \
   (pcl::PointXYZ)             \
+  (pcl::PointXYZd)             \
   (pcl::PointXYZI)            \
   (pcl::PointXYZL)            \
   (pcl::PointXYZRGBA)         \
@@ -279,7 +288,7 @@ namespace pcl
 
  #define PCL_ADD_POINT4Dd                                                                \
   PCL_ADD_UNION_POINT4Dd                                                                \
- // PCL_ADD_EIGEN_MAPS_POINT4D
+  PCL_ADD_EIGEN_MAPS_POINT4D
 
 #define PCL_ADD_UNION_NORMAL4D \
   union EIGEN_ALIGN16 { \
