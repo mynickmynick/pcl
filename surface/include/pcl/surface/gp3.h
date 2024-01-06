@@ -523,8 +523,6 @@ namespace pcl
    * gp.setInputCloud(cloud_with_normals)
    * ...
    * pcl::PolygonMesh pm;
-   * gp3.reconstruct(pm);
-   * calculatePolygonArea(cloud_with_normals, pm.vertices);
    * gp.reconstruct(pm);
    * float functArea=computeTriangleMeshArea(cloud_with_normals, pm.polygons);
    * \ingroup
