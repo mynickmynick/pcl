@@ -263,7 +263,7 @@ TEST(PCL, computeTriangleMeshArea)
 
   float functArea = computeTriangleMeshArea(cloud_with_normals, triangles.polygons);
   //EXPECT_NEAR(int(functArea), 685, 5);
-  std::out << "functArea= " << functArea << std::endl;
+  std::cout << "functArea= " << functArea << std::endl;
   EXPECT_NEAR(int(functArea), 685, 5);
 
 
