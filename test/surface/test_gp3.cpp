@@ -261,10 +261,8 @@ TEST(PCL, computeTriangleMeshArea)
   // Reconstruct
   gp3.reconstruct(triangles);
 
-  float functArea = computeTriangleMeshArea(cloud_with_normals, triangles.polygons);
-  //EXPECT_NEAR(int(functArea), 685, 5);
-  std::cout << "functArea= " << functArea << std::endl;
-  EXPECT_NEAR(int(functArea), 685, 5);
+  float functArea = pcl::computeTriangleMeshArea(cloud_with_normals, triangles.polygons);
+  EXPECT_NEAR((functArea), 0.0210945, 0.001);
 
 
 }

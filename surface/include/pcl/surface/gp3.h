@@ -528,33 +528,29 @@ namespace pcl
    * \ingroup
    * common
    */
-  template <typename PointT>
-  inline float
-  computeTriangleMeshArea(const shared_ptr<pcl::PointCloud<PointT>>& cloud,
-                          std::vector<pcl::Vertices>& triangleMesh);
-
-   /** \brief Calculate the area of a triangle mesh
-   * \param[in] cloud the point cloud to which the mesh is applied
-   * \param[in] indices of the point cloud
-   * \param[in] triangleMesh a triangle mesh
-   * \return the mesh area
-   * \note example of use:
-   * pcl::GreedyProjectionTriangulation<PointN> gp;
-   * ...
-   * gp.setInputCloud(cloud_with_normals)
-   * ...
-   * pcl::PolygonMesh pm;
-   * gp.reconstruct(pm);
-   * float functArea=computeTriangleMeshArea(cloud_with_normals, pm.polygons);
-   * \ingroup
-   * common
-   */
 
   template <typename PointT>
   inline float
-  computeTriangleMeshArea(const shared_ptr<pcl::PointCloud<PointT>>& cloud,
-                          const shared_ptr<Indices>& indices,
-                          std::vector<pcl::Vertices>& triangleMesh);
+    computeTriangleMeshArea(const shared_ptr<pcl::PointCloud<PointT>>& cloud,
+      std::vector<pcl::Vertices>& triangleMesh)
+  {
+    double area = 0;
+    for (auto& triangle_ : triangleMesh) {
+      if (triangle_.vertices.size() == 3) {
+        const Eigen::Matrix<double, 3, 1> P(
+          (*cloud)[triangle_.vertices[0]].x - (*cloud)[triangle_.vertices[2]].x,
+          (*cloud)[triangle_.vertices[0]].y - (*cloud)[triangle_.vertices[2]].y,
+          (*cloud)[triangle_.vertices[0]].z - (*cloud)[triangle_.vertices[2]].z);
+        const Eigen::Matrix<double, 3, 1> Q(
+          (*cloud)[triangle_.vertices[1]].x - (*cloud)[triangle_.vertices[2]].x,
+          (*cloud)[triangle_.vertices[1]].y - (*cloud)[triangle_.vertices[2]].y,
+          (*cloud)[triangle_.vertices[1]].z - (*cloud)[triangle_.vertices[2]].z);
+        area += 0.5 * P.cross(Q).norm();
+      }
+    }
+    return area;
+  }
+
 
 } // namespace pcl
 

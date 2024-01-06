@@ -1667,57 +1667,6 @@ pcl::GreedyProjectionTriangulation<PointInT>::getTriangleList (const pcl::Polygo
 #define PCL_INSTANTIATE_GreedyProjectionTriangulation(T)                \
   template class PCL_EXPORTS pcl::GreedyProjectionTriangulation<T>;
 
-template <typename PointT>
-inline float
-pcl::computeTriangleMeshArea(const shared_ptr<pcl::PointCloud<PointT>>& cloud,
-                             std::vector<pcl::Vertices>& triangleMesh)
-{
-  double area = 0;
-  for (auto& triangle_ : triangleMesh) {
-    if (triangle_.vertices.size() == 3) {
-      const Eigen::Matrix<double, 3, 1> P(
-          (*cloud)[triangle_.vertices[0]].x - (*cloud)[triangle_.vertices[2]].x,
-          (*cloud)[triangle_.vertices[0]].y - (*cloud)[triangle_.vertices[2]].y,
-          (*cloud)[triangle_.vertices[0]].z - (*cloud)[triangle_.vertices[2]].z);
-      const Eigen::Matrix<double, 3, 1> Q(
-          (*cloud)[triangle_.vertices[1]].x - (*cloud)[triangle_.vertices[2]].x,
-          (*cloud)[triangle_.vertices[1]].y - (*cloud)[triangle_.vertices[2]].y,
-          (*cloud)[triangle_.vertices[1]].z - (*cloud)[triangle_.vertices[2]].z);
-      area += 0.5 * P.cross(Q).norm();
-    }
-  }
-  return area;
-}
-
-template <typename PointT>
-inline float
-pcl::computeTriangleMeshArea(const shared_ptr<pcl::PointCloud<PointT>>& cloud,
-                             const shared_ptr<Indices>& indices,
-                             std::vector<pcl::Vertices>& triangleMesh)
-{
-  double area = 0;
-  for (auto& triangle_ : triangleMesh) {
-    if (triangle_.vertices.size() == 3) {
-      const Eigen::Matrix<double, 3, 1> P(
-          (*cloud)[(*indices)[triangle_.vertices[0]]].x -
-              (*cloud)[(*indices)[triangle_.vertices[2]]].x,
-          (*cloud)[(*indices)[triangle_.vertices[0]]].y -
-              (*cloud)[(*indices)[triangle_.vertices[2]]].y,
-          (*cloud)[(*indices)[triangle_.vertices[0]]].z -
-              (*cloud)[(*indices)[triangle_.vertices[2]]].z);
-      const Eigen::Matrix<double, 3, 1> Q(
-          (*cloud)[(*indices)[triangle_.vertices[1]]].x -
-              (*cloud)[(*indices)[triangle_.vertices[2]]].x,
-          (*cloud)[(*indices)[triangle_.vertices[1]]].y -
-              (*cloud)[(*indices)[triangle_.vertices[2]]].y,
-          (*cloud)[(*indices)[triangle_.vertices[1]]].z -
-              (*cloud)[(*indices)[triangle_.vertices[2]]].z);
-      area += 0.5 * P.cross(Q).norm();
-    }
-  }
-  return area;
-}
-
 #endif    // PCL_SURFACE_IMPL_GP3_H_
 
 
