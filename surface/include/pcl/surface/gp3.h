@@ -535,16 +535,17 @@ namespace pcl
       std::vector<pcl::Vertices>& triangleMesh)
   {
     double area = 0;
+    pcl::PointCloud<PointT>& cl = (*cloud);
     for (auto& triangle_ : triangleMesh) {
       if (triangle_.vertices.size() == 3) {
         const Eigen::Matrix<double, 3, 1> P(
-          (*cloud)[triangle_.vertices[0]].x - (*cloud)[triangle_.vertices[2]].x,
-          (*cloud)[triangle_.vertices[0]].y - (*cloud)[triangle_.vertices[2]].y,
-          (*cloud)[triangle_.vertices[0]].z - (*cloud)[triangle_.vertices[2]].z);
+          cl[triangle_.vertices[0]].x - (*cloud)[triangle_.vertices[2]].x,
+          cl[triangle_.vertices[0]].y - (*cloud)[triangle_.vertices[2]].y,
+          cl[triangle_.vertices[0]].z - (*cloud)[triangle_.vertices[2]].z);
         const Eigen::Matrix<double, 3, 1> Q(
-          (*cloud)[triangle_.vertices[1]].x - (*cloud)[triangle_.vertices[2]].x,
-          (*cloud)[triangle_.vertices[1]].y - (*cloud)[triangle_.vertices[2]].y,
-          (*cloud)[triangle_.vertices[1]].z - (*cloud)[triangle_.vertices[2]].z);
+          cl[triangle_.vertices[1]].x - (*cloud)[triangle_.vertices[2]].x,
+          cl[triangle_.vertices[1]].y - (*cloud)[triangle_.vertices[2]].y,
+          cl[triangle_.vertices[1]].z - (*cloud)[triangle_.vertices[2]].z);
         area += 0.5 * P.cross(Q).norm();
       }
     }
